@@ -15,7 +15,16 @@ watch(
 
 export function useTheme() {
   const toggleTheme = () => {
-    theme.value = theme.value === 'dark' ? 'light' : 'dark'
+    const nextTheme = theme.value === 'dark' ? 'light' : 'dark'
+
+    if (!document.startViewTransition) {
+      theme.value = nextTheme
+      return
+    }
+
+    document.startViewTransition(() => {
+      theme.value = nextTheme
+    })
   }
 
   return {
