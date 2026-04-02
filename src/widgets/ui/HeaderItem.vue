@@ -24,7 +24,7 @@ const { theme, toggleTheme } = useTheme()
         )
       "
     >
-      <Brain /> Neural Playground
+      <Brain /> <span class="xs:block hidden">Neural Playground</span>
     </router-link>
     <button
       @click="toggleTheme"
