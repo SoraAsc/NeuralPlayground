@@ -1,12 +1,5 @@
 <script setup lang="ts">
 import { cn } from '@/shared/lib/utils'
-// defineProps<{
-//   href: string
-//   category: string
-//   title: string
-//   description: string
-// }>()
-
 withDefaults(
   defineProps<{
     href: string
