@@ -7,9 +7,24 @@ export function useNeuralSnake(game: Ref<InstanceType<typeof GameTemplate> | nul
   const simulations = ref<number[]>([])
   const currentSimulationIndex = ref<number | null>(null)
 
-  const startTraining = () => {
+  // const startTraining = () => {
+  //   if (currentSimulationIndex.value !== null)
+  //     game.value?.sendMessage('WebInterfaceObject', 'StartTraining', currentSimulationIndex.value)
+  // }
+
+  const createSimulation = () => {
     if (currentSimulationIndex.value !== null)
-      game.value?.sendMessage('WebInterfaceObject', 'StartTraining', currentSimulationIndex.value)
+      game.value?.sendMessage('WebInterfaceObject', 'CreateSimulation')
+  }
+
+  const removeSimulation = (index: number) => {
+    if (currentSimulationIndex.value !== null)
+      game.value?.sendMessage('WebInterfaceObject', 'RemoveSimulation', index)
+  }
+
+  const changeSelectedSimulation = (index: number) => {
+    if (index < 0 && simulations.value.length > 0 && simulations.value.length > index) return
+    currentSimulationIndex.value = index
   }
 
   const handleSimulationCreated = (event: CustomEvent<{ index: number }>) => {
@@ -58,5 +73,12 @@ export function useNeuralSnake(game: Ref<InstanceType<typeof GameTemplate> | nul
     window.removeEventListener('neuralSnake:episodesUpdated', handleEpisodeUpdate as EventListener)
   })
 
-  return { episodes, currentSimulationIndex, game, startTraining }
+  return {
+    simulations,
+    currentSimulationIndex,
+    changeSelectedSimulation,
+    createSimulation,
+    removeSimulation,
+  }
+  // return { episodes, currentSimulationIndex, game, startTraining }
 }

@@ -1,10 +1,11 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "ignorePatterns": ["public/unity/**"],
   "plugins": ["eslint", "typescript", "unicorn", "oxc", "vue"],
   "env": {
-    "browser": true
+    "browser": true,
   },
   "categories": {
-    "correctness": "error"
-  }
+    "correctness": "error",
+  },
 }
