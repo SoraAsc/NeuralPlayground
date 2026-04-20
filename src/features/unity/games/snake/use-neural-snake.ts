@@ -16,13 +16,13 @@ export function useNeuralSnake(game: Ref<InstanceType<typeof GameTemplate> | nul
   // }
 
   const createSimulation = () => {
-    if (currentSimulationIndex.value !== null)
-      game.value?.sendMessage('WebInterfaceObject', 'CreateSimulation')
+    game.value?.sendMessage('WebInterfaceObject', 'CreateSimulation')
+    if (currentSimulationIndex.value === -1) changeSimulationFocus(-1)
   }
 
   const removeSimulation = (index: number) => {
-    if (currentSimulationIndex.value !== null)
-      game.value?.sendMessage('WebInterfaceObject', 'RemoveSimulation', index)
+    game.value?.sendMessage('WebInterfaceObject', 'RemoveSimulation', index)
+    if (currentSimulationIndex.value === -1) changeSimulationFocus(-1)
   }
 
   const syncBackgroundColor = async () => {
@@ -34,6 +34,7 @@ export function useNeuralSnake(game: Ref<InstanceType<typeof GameTemplate> | nul
   const changeSelectedSimulation = (index: number) => {
     if (index < -1 && simulations.value.length > 0 && simulations.value.length > index) return
     currentSimulationIndex.value = index
+    changeSimulationFocus(index)
   }
 
   const handleSimulationCreated = (event: CustomEvent<{ index: number }>) => {
@@ -54,6 +55,7 @@ export function useNeuralSnake(game: Ref<InstanceType<typeof GameTemplate> | nul
     if (currentSimulationIndex.value === removedIndex) {
       const next = simulations.value[0]
       currentSimulationIndex.value = next ?? null
+      changeSimulationFocus(currentSimulationIndex.value ?? -1)
     } else if (currentSimulationIndex.value && currentSimulationIndex.value > removedIndex) {
       currentSimulationIndex.value -= 1
     }
@@ -61,6 +63,10 @@ export function useNeuralSnake(game: Ref<InstanceType<typeof GameTemplate> | nul
 
   const handleEpisodeUpdate = (event: CustomEvent<EpisodePayloadI>) => {
     episodes.value = event.detail.episodes
+  }
+
+  const changeSimulationFocus = (index: number) => {
+    game.value?.sendMessage('WebInterfaceObject', 'FocusSimulation', index)
   }
 
   watch(theme, syncBackgroundColor)
