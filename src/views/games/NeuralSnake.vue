@@ -12,10 +12,11 @@ const {
   changeSelectedSimulation,
   createSimulation,
   removeSimulation,
+  syncBackgroundColor,
 } = useNeuralSnake(game)
 </script>
 <template>
-  <main class="flex flex-col lg:flex-row gap-6 px-4 py-6">
+  <main class="flex flex-col gap-6 px-4 py-6">
     <div class="border border-border bg-card">
       <div class="flex items-center gap-2 border-b border-border px-4 py-2 overflow-x-auto">
         <base-button
@@ -53,20 +54,23 @@ const {
           <plus />
         </base-button>
       </div>
+      <game-template
+        ref="game"
+        class="w-full h-[60vh]"
+        loader-url="/unity/neural-snake/NeuralSnake.loader.js"
+        @ready="syncBackgroundColor"
+        :config="{
+          dataUrl: '/unity/neural-snake/NeuralSnake.data.br',
+          frameworkUrl: '/unity/neural-snake/NeuralSnake.framework.js.br',
+          codeUrl: '/unity/neural-snake/NeuralSnake.wasm.br',
+          companyName: 'SoraAsc',
+          productName: 'NeuralSnake',
+          productVersion: '1.0',
+          streamingAssetsUrl: '/unity/streaming-assets',
+        }"
+      />
     </div>
-    <game-template
-      ref="game"
-      loader-url="/unity/neural-snake/NeuralSnake.loader.js"
-      :config="{
-        dataUrl: '/unity/neural-snake/NeuralSnake.data.br',
-        frameworkUrl: '/unity/neural-snake/NeuralSnake.framework.js.br',
-        codeUrl: '/unity/neural-snake/NeuralSnake.wasm.br',
-        companyName: 'SoraAsc',
-        productName: 'NeuralSnake',
-        productVersion: '1.0',
-        streamingAssetsUrl: '/unity/streaming-assets',
-      }"
-    />
+
     <!-- <button @click="startTraining">Start</button> -->
   </main>
 </template>

@@ -13,6 +13,10 @@ const props = defineProps<{
   loaderUrl: string
 }>()
 
+const emit = defineEmits<{
+  (e: 'ready'): void
+}>()
+
 let unityInstance: UnityInstance | null = null
 
 function sendMessage(objectName: string, methodName: string, value?: string | number) {
@@ -31,6 +35,7 @@ onMounted(() => {
     createUnityInstance(canvas, props.config)
       .then((instance: UnityInstance) => {
         unityInstance = instance
+        emit('ready')
         console.log('Loading Unity')
       })
       .catch((message: string) => {

@@ -1,8 +1,11 @@
-import { ref, onMounted, onUnmounted, type Ref } from 'vue'
+import { ref, onMounted, onUnmounted, type Ref, watch, nextTick } from 'vue'
 import type { EpisodePayloadI } from '.'
 import type GameTemplate from '../../ui/GameTemplate.vue'
+import { useTheme } from '@/shared/lib/theme/useTheme'
+import { getVariableHex } from '@/shared/lib/utils'
 
 export function useNeuralSnake(game: Ref<InstanceType<typeof GameTemplate> | null>) {
+  const { theme } = useTheme()
   const episodes = ref(0)
   const simulations = ref<number[]>([])
   const currentSimulationIndex = ref<number | null>(null)
@@ -20,6 +23,12 @@ export function useNeuralSnake(game: Ref<InstanceType<typeof GameTemplate> | nul
   const removeSimulation = (index: number) => {
     if (currentSimulationIndex.value !== null)
       game.value?.sendMessage('WebInterfaceObject', 'RemoveSimulation', index)
+  }
+
+  const syncBackgroundColor = async () => {
+    await nextTick()
+    const hex = getVariableHex('--card')
+    game.value?.sendMessage('WebInterfaceObject', 'SetBackgroundColorHex', hex)
   }
 
   const changeSelectedSimulation = (index: number) => {
@@ -54,6 +63,8 @@ export function useNeuralSnake(game: Ref<InstanceType<typeof GameTemplate> | nul
     episodes.value = event.detail.episodes
   }
 
+  watch(theme, syncBackgroundColor)
+
   onMounted(() => {
     window.addEventListener(
       'neuralSnake:simulationCreated',
@@ -70,7 +81,7 @@ export function useNeuralSnake(game: Ref<InstanceType<typeof GameTemplate> | nul
       'neuralSnake:simulationCreated',
       handleSimulationCreated as EventListener,
     )
-    window.addEventListener(
+    window.removeEventListener(
       'neuralSnake:simulationRemoved',
       handleSimulationRemoved as EventListener,
     )
@@ -83,6 +94,7 @@ export function useNeuralSnake(game: Ref<InstanceType<typeof GameTemplate> | nul
     changeSelectedSimulation,
     createSimulation,
     removeSimulation,
+    syncBackgroundColor,
   }
   // return { episodes, currentSimulationIndex, game, startTraining }
 }
