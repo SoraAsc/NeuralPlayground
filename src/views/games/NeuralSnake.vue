@@ -1,15 +1,14 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { useNeuralSnake } from '@/features/unity/games/snake/use-neural-snake'
 import GameTemplate from '@/features/unity/ui/GameTemplate.vue'
+import { ref } from 'vue'
 
-const game = ref<InstanceType<typeof GameTemplate>>()
-
-function callUnity() {
-  game.value?.sendMessage('WebInterfaceObject', 'StartTraining')
-}
+const game = ref<InstanceType<typeof GameTemplate> | null>(null)
+const { episodes, startTraining } = useNeuralSnake(game)
 </script>
 <template>
   <main>
+    <header>Episodes: {{ episodes }}</header>
     <game-template
       ref="game"
       loader-url="/unity/neural-snake/NeuralSnake.loader.js"
@@ -23,6 +22,6 @@ function callUnity() {
         streamingAssetsUrl: '/unity/streaming-assets',
       }"
     />
-    <button @click="callUnity">Start</button>
+    <button @click="startTraining">Start</button>
   </main>
 </template>
