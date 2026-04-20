@@ -36,13 +36,17 @@ export function useNeuralSnake(game: Ref<InstanceType<typeof GameTemplate> | nul
   }
 
   const handleSimulationRemoved = (event: CustomEvent<{ index: number }>) => {
-    const index = event.detail.index
+    const removedIndex = event.detail.index
 
-    simulations.value = simulations.value.filter((s) => s !== index)
+    simulations.value = simulations.value
+      .filter((s) => s !== removedIndex)
+      .map((s) => (s > removedIndex ? s - 1 : s))
 
-    if (currentSimulationIndex.value === index) {
+    if (currentSimulationIndex.value === removedIndex) {
       const next = simulations.value[0]
       currentSimulationIndex.value = next ?? null
+    } else if (currentSimulationIndex.value && currentSimulationIndex.value > removedIndex) {
+      currentSimulationIndex.value -= 1
     }
   }
 
