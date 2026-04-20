@@ -19,6 +19,15 @@ const {
     <div class="border border-border bg-card">
       <div class="flex items-center gap-2 border-b border-border px-4 py-2 overflow-x-auto">
         <base-button
+          :variant="currentSimulationIndex === -1 ? 'primary' : 'outline'"
+          size="dot"
+          show-dot
+          @click="changeSelectedSimulation(-1)"
+          :disabled="currentSimulationIndex === null"
+        >
+          All Sim
+        </base-button>
+        <base-button
           v-for="sim in simulations"
           :key="sim"
           :variant="currentSimulationIndex === sim ? 'primary' : 'outline'"

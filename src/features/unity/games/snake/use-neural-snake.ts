@@ -23,7 +23,7 @@ export function useNeuralSnake(game: Ref<InstanceType<typeof GameTemplate> | nul
   }
 
   const changeSelectedSimulation = (index: number) => {
-    if (index < 0 && simulations.value.length > 0 && simulations.value.length > index) return
+    if (index < -1 && simulations.value.length > 0 && simulations.value.length > index) return
     currentSimulationIndex.value = index
   }
 
