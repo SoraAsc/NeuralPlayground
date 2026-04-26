@@ -3,7 +3,7 @@ import BaseButton from '@/features/experiments/ui/BaseButton.vue'
 import { useNeuralSnake } from '@/features/unity/games/snake/use-neural-snake'
 import GameTemplate from '@/features/unity/ui/GameTemplate.vue'
 import { Plus, X, Brain, Play, RotateCcw, Pause } from '@lucide/vue'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 
 const game = ref<InstanceType<typeof GameTemplate> | null>(null)
 const {
@@ -13,10 +13,37 @@ const {
   createSimulation,
   removeSimulation,
   syncBackgroundColor,
+
+  startTraining,
+  startTesting,
+  pauseSimulation,
+  // resetSimulation,
 } = useNeuralSnake(game)
 
-const isTraining = ref(false)
-const isTesting = ref(false)
+const currentSimulation = computed(() =>
+  simulations.value.find((s) => s.index === currentSimulationIndex.value),
+)
+
+const targetSimulations = computed(() => {
+  if (currentSimulationIndex.value === -1) return simulations.value
+  return currentSimulation.value ? [currentSimulation.value] : []
+})
+
+const isTesting = computed(() => targetSimulations.value.some((s) => s.status === 'testing'))
+
+const isAllTesting = computed(
+  () =>
+    targetSimulations.value.length > 0 &&
+    targetSimulations.value.every((s) => s.status === 'testing'),
+)
+
+const isTraining = computed(() => targetSimulations.value.some((s) => s.status === 'training'))
+
+const isAllTraining = computed(
+  () =>
+    targetSimulations.value.length > 0 &&
+    targetSimulations.value.every((s) => s.status === 'training'),
+)
 </script>
 
 <template>
@@ -27,6 +54,7 @@ const isTesting = ref(false)
           :variant="currentSimulationIndex === -1 ? 'primary' : 'outline'"
           size="dot"
           show-dot
+          :active="isTraining || isTesting"
           @click="changeSelectedSimulation(-1)"
           :disabled="currentSimulationIndex === null"
         >
@@ -34,18 +62,19 @@ const isTesting = ref(false)
         </base-button>
         <base-button
           v-for="sim in simulations"
-          :key="sim"
-          :variant="currentSimulationIndex === sim ? 'primary' : 'outline'"
+          :key="sim.index"
+          :variant="currentSimulationIndex === sim.index ? 'primary' : 'outline'"
           size="dot"
           show-dot
-          @click="changeSelectedSimulation(sim)"
+          :active="sim.status != 'stopped'"
+          @click="changeSelectedSimulation(sim.index)"
         >
-          Sim {{ sim + 1 }}
+          Sim {{ sim.index + 1 }}
           <template #right>
             <x
-              v-if="sim > 0"
+              v-if="sim.index > 0"
               class="h-3 w-3 opacity-50 hover:opacity-100 ml-0.5"
-              @click.stop="removeSimulation(sim)"
+              @click.stop="removeSimulation(sim.index)"
             />
           </template>
         </base-button>
@@ -83,23 +112,30 @@ const isTesting = ref(false)
             :variant="isTraining ? 'primary' : 'outline'"
             size="icon"
             class="rounded-lg"
-            @click="isTraining = !isTraining"
+            @click="isAllTraining ? pauseSimulation() : startTraining()"
+            :disabled="currentSimulationIndex === null"
           >
-            <component :is="isTraining ? Pause : Brain" />
+            <component :is="isAllTraining ? Pause : Brain" />
           </base-button>
 
           <base-button
             :variant="isTesting ? 'primary' : 'outline'"
             size="icon"
             class="rounded-lg"
-            @click="isTesting = !isTesting"
+            @click="isAllTesting ? pauseSimulation() : startTesting()"
+            :disabled="currentSimulationIndex === null"
           >
-            <component :is="isTesting ? Pause : Play" />
+            <component :is="isAllTesting ? Pause : Play" />
           </base-button>
 
           <div class="h-px w-4 bg-border/50 my-1" />
 
-          <base-button variant="outline" size="icon" class="rounded-lg">
+          <base-button
+            variant="outline"
+            size="icon"
+            class="rounded-lg"
+            :disabled="currentSimulationIndex === null"
+          >
             <rotate-ccw />
           </base-button>
         </div>

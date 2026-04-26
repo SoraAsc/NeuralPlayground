@@ -46,7 +46,7 @@ const buttonClasses = computed(() =>
 const dotClasses = computed(() =>
   cn(
     'w-1.5 h-1.5 rounded-full transition-colors',
-    props.active ? 'bg-foreground/50' : 'bg-muted-foreground/40',
+    props.active ? 'bg-yellow-600' : 'bg-muted-foreground/40',
   ),
 )
 </script>

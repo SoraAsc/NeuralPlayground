@@ -1,19 +1,18 @@
 import { ref, onMounted, onUnmounted, type Ref, watch, nextTick } from 'vue'
-import type { EpisodePayloadI } from '.'
+import type { EpisodePayloadI, StatsPayloadI } from '.'
 import type GameTemplate from '../../ui/GameTemplate.vue'
 import { useTheme } from '@/shared/lib/theme/useTheme'
 import { getVariableHex } from '@/shared/lib/utils'
 
+export interface SimulationI extends Partial<StatsPayloadI> {
+  index: number
+}
+
 export function useNeuralSnake(game: Ref<InstanceType<typeof GameTemplate> | null>) {
   const { theme } = useTheme()
   const episodes = ref(0)
-  const simulations = ref<number[]>([])
+  const simulations = ref<SimulationI[]>([])
   const currentSimulationIndex = ref<number | null>(null)
-
-  // const startTraining = () => {
-  //   if (currentSimulationIndex.value !== null)
-  //     game.value?.sendMessage('WebInterfaceObject', 'StartTraining', currentSimulationIndex.value)
-  // }
 
   const createSimulation = () => {
     game.value?.sendMessage('WebInterfaceObject', 'CreateSimulation')
@@ -40,8 +39,7 @@ export function useNeuralSnake(game: Ref<InstanceType<typeof GameTemplate> | nul
   const handleSimulationCreated = (event: CustomEvent<{ index: number }>) => {
     const index = event.detail.index
 
-    if (!simulations.value.includes(index)) simulations.value.push(index)
-
+    if (!simulations.value.find((s) => s.index === index)) simulations.value.push({ index })
     if (currentSimulationIndex.value === null) currentSimulationIndex.value = index
   }
 
@@ -49,12 +47,15 @@ export function useNeuralSnake(game: Ref<InstanceType<typeof GameTemplate> | nul
     const removedIndex = event.detail.index
 
     simulations.value = simulations.value
-      .filter((s) => s !== removedIndex)
-      .map((s) => (s > removedIndex ? s - 1 : s))
+      .filter((s) => s.index !== removedIndex)
+      .map((s) => ({
+        ...s,
+        index: s.index > removedIndex ? s.index - 1 : s.index,
+      }))
 
     if (currentSimulationIndex.value === removedIndex) {
       const next = simulations.value[0]
-      currentSimulationIndex.value = next ?? null
+      currentSimulationIndex.value = next?.index ?? null
       changeSimulationFocus(currentSimulationIndex.value ?? -1)
     } else if (currentSimulationIndex.value && currentSimulationIndex.value > removedIndex) {
       currentSimulationIndex.value -= 1
@@ -65,8 +66,29 @@ export function useNeuralSnake(game: Ref<InstanceType<typeof GameTemplate> | nul
     episodes.value = event.detail.episodes
   }
 
+  const handleStatsUpdated = (event: CustomEvent<StatsPayloadI>) => {
+    const data = event.detail
+    const sim = simulations.value.find((s) => s.index === data.index)
+    if (sim) Object.assign(sim, data)
+  }
+
   const changeSimulationFocus = (index: number) => {
     game.value?.sendMessage('WebInterfaceObject', 'FocusSimulation', index)
+  }
+
+  const startTraining = () => {
+    if (currentSimulationIndex.value === null) return
+    game.value?.sendMessage('WebInterfaceObject', 'StartTraining', currentSimulationIndex.value)
+  }
+
+  const startTesting = () => {
+    if (currentSimulationIndex.value === null) return
+    game.value?.sendMessage('WebInterfaceObject', 'StartTesting', currentSimulationIndex.value)
+  }
+
+  const pauseSimulation = () => {
+    if (currentSimulationIndex.value === null) return
+    game.value?.sendMessage('WebInterfaceObject', 'PauseSimulation', currentSimulationIndex.value)
   }
 
   watch(theme, syncBackgroundColor)
@@ -81,6 +103,7 @@ export function useNeuralSnake(game: Ref<InstanceType<typeof GameTemplate> | nul
       handleSimulationRemoved as EventListener,
     )
     window.addEventListener('neuralSnake:episodesUpdated', handleEpisodeUpdate as EventListener)
+    window.addEventListener('neuralSnake:statsUpdated', handleStatsUpdated as EventListener)
   })
   onUnmounted(() => {
     window.removeEventListener(
@@ -92,6 +115,7 @@ export function useNeuralSnake(game: Ref<InstanceType<typeof GameTemplate> | nul
       handleSimulationRemoved as EventListener,
     )
     window.removeEventListener('neuralSnake:episodesUpdated', handleEpisodeUpdate as EventListener)
+    window.removeEventListener('neuralSnake:statsUpdated', handleStatsUpdated as EventListener)
   })
 
   return {
@@ -101,6 +125,9 @@ export function useNeuralSnake(game: Ref<InstanceType<typeof GameTemplate> | nul
     createSimulation,
     removeSimulation,
     syncBackgroundColor,
+
+    startTraining,
+    startTesting,
+    pauseSimulation,
   }
-  // return { episodes, currentSimulationIndex, game, startTraining }
 }
