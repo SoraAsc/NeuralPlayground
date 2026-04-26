@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import BaseButton from '@/features/experiments/ui/BaseButton.vue'
+import SnakePanel from '@/features/unity/games/snake/ui/SnakePanel.vue'
 import { useNeuralSnake } from '@/features/unity/games/snake/use-neural-snake'
 import GameTemplate from '@/features/unity/ui/GameTemplate.vue'
 import { Plus, X, Brain, Play, RotateCcw, Pause } from '@lucide/vue'
@@ -44,11 +45,32 @@ const isAllTraining = computed(
     targetSimulations.value.length > 0 &&
     targetSimulations.value.every((s) => s.status === 'training'),
 )
+
+// const globalStats = computed(() => {
+//   if (currentSimulationIndex.value !== -1 || simulations.value.length === 0) return null
+
+//   const count = simulations.value.length
+//   return {
+//     reward: simulations.value.reduce((acc, s) => acc + (s.reward || 0), 0) / count,
+//     bodySize: simulations.value.reduce((acc, s) => acc + (s.bodySize || 0), 0) / count,
+//     realTimeTrained:
+//       simulations.value.reduce((acc, s) => acc + (s.realTimeTrained || 0), 0) / count,
+//     acceleratedTimeTrained:
+//       simulations.value.reduce((acc, s) => acc + (s.acceleratedTimeTrained || 0), 0) / count,
+//     status: simulations.value.every((s) => s.status === 'stopped')
+//       ? 'stopped'
+//       : simulations.value.every((s) => s.status === 'training')
+//         ? 'training'
+//         : simulations.value.every((s) => s.status === 'testing')
+//           ? 'testing'
+//           : 'mixed',
+//   }
+// })
 </script>
 
 <template>
-  <main class="flex flex-col gap-6 px-4 py-6">
-    <div class="border border-border bg-card">
+  <main class="flex flex-wrap justify-center gap-6 px-4 py-6">
+    <div class="w-2/3 grow border border-border bg-card">
       <div class="flex items-center gap-2 border-b border-border px-4 py-2 overflow-x-auto">
         <base-button
           :variant="currentSimulationIndex === -1 ? 'primary' : 'outline'"
@@ -141,5 +163,6 @@ const isAllTraining = computed(
         </div>
       </div>
     </div>
+    <snake-panel :simulation="currentSimulation ?? null" :reward-history="[]" />
   </main>
 </template>
