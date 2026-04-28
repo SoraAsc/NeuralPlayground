@@ -7,11 +7,13 @@ import type { SimulationI } from '../use-neural-snake'
 const props = defineProps<{
   simulation?: SimulationI | null
   rewardHistory?: number[]
+  episode: number
 }>()
 
 const statRows = computed<StatRow[]>(() => {
   const s = props.simulation
   return [
+    { label: 'Episódio', value: props.episode, format: 'int' },
     { label: 'Recompensa atual', value: s?.reward ?? 0, format: 'float' },
     { label: 'Melhor recompensa', value: s?.bestReward ?? 0, format: 'float' },
     { label: 'Tamanho atual', value: s?.bodySize ?? 0, format: 'int' },

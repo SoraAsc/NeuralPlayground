@@ -8,6 +8,7 @@ import { ref, computed } from 'vue'
 
 const game = ref<InstanceType<typeof GameTemplate> | null>(null)
 const {
+  episodes,
   simulations,
   currentSimulationIndex,
   changeSelectedSimulation,
@@ -163,6 +164,10 @@ const isAllTraining = computed(
         </div>
       </div>
     </div>
-    <snake-panel :simulation="currentSimulation ?? null" :reward-history="[]" />
+    <snake-panel
+      :simulation="currentSimulation ?? null"
+      :reward-history="currentSimulation?.rewardHistory ?? []"
+      :episode="episodes"
+    />
   </main>
 </template>

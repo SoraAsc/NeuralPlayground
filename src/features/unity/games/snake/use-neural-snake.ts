@@ -6,7 +6,11 @@ import { getVariableHex } from '@/shared/lib/utils'
 
 export interface SimulationI extends Partial<StatsPayloadI> {
   index: number
+  rewardHistory: number[]
+  episodes: number
 }
+
+const MAX_REWARDS_HISTORY = 1000
 
 export function useNeuralSnake(game: Ref<InstanceType<typeof GameTemplate> | null>) {
   const { theme } = useTheme()
@@ -34,12 +38,18 @@ export function useNeuralSnake(game: Ref<InstanceType<typeof GameTemplate> | nul
     if (index < -1 && simulations.value.length > 0 && simulations.value.length > index) return
     currentSimulationIndex.value = index
     changeSimulationFocus(index)
+
+    if (index !== -1) {
+      const sim = simulations.value.find((s) => s.index === index)
+      if (sim) episodes.value = sim.episodes
+    }
   }
 
   const handleSimulationCreated = (event: CustomEvent<{ index: number }>) => {
     const index = event.detail.index
 
-    if (!simulations.value.find((s) => s.index === index)) simulations.value.push({ index })
+    if (!simulations.value.find((s) => s.index === index))
+      simulations.value.push({ index, rewardHistory: [], episodes: 0 })
     if (currentSimulationIndex.value === null) currentSimulationIndex.value = index
   }
 
@@ -63,13 +73,30 @@ export function useNeuralSnake(game: Ref<InstanceType<typeof GameTemplate> | nul
   }
 
   const handleEpisodeUpdate = (event: CustomEvent<EpisodePayloadI>) => {
-    episodes.value = event.detail.episodes
+    const { index, episodes: episodeCount } = event.detail
+    const sim = simulations.value.find((s) => s.index === index)
+
+    if (sim) {
+      if (sim.reward !== undefined) {
+        sim.rewardHistory.push(sim.reward)
+        if (sim.rewardHistory.length > MAX_REWARDS_HISTORY) {
+          sim.rewardHistory.shift()
+        }
+      }
+      sim.episodes = episodeCount
+    }
+
+    if (index === currentSimulationIndex.value) {
+      episodes.value = episodeCount
+    }
   }
 
   const handleStatsUpdated = (event: CustomEvent<StatsPayloadI>) => {
     const data = event.detail
     const sim = simulations.value.find((s) => s.index === data.index)
-    if (sim) Object.assign(sim, data)
+    if (sim) {
+      Object.assign(sim, data)
+    }
   }
 
   const changeSimulationFocus = (index: number) => {
@@ -119,6 +146,7 @@ export function useNeuralSnake(game: Ref<InstanceType<typeof GameTemplate> | nul
   })
 
   return {
+    episodes,
     simulations,
     currentSimulationIndex,
     changeSelectedSimulation,
