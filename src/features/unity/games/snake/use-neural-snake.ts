@@ -15,7 +15,7 @@ const MAX_REWARDS_HISTORY = 1000
 export function useNeuralSnake(game: Ref<InstanceType<typeof GameTemplate> | null>) {
   const { theme } = useTheme()
   const episodes = ref(0)
-  const tickRate = ref(1)
+  const tickRate = ref(8000)
   const simulations = ref<SimulationI[]>([])
   const currentSimulationIndex = ref<number | null>(null)
 

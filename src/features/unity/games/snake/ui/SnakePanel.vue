@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import type { StatRow, InfoSection } from '@/features/unity/ui/SimulationPanel.vue'
 import SimulationPanel from '@/features/unity/ui/SimulationPanel.vue'
 import type { SimulationI } from '../use-neural-snake'
@@ -10,13 +10,12 @@ const props = defineProps<{
   simulation?: SimulationI | null
   rewardHistory?: number[]
   episode: number
+  speed: number
 }>()
 
 const emit = defineEmits<{
   'update:speed': [value: number]
 }>()
-
-const speed = ref(8)
 
 const statRows = computed<StatRow[]>(() => {
   const s = props.simulation
@@ -151,7 +150,7 @@ const infoSections: InfoSection[] = [
           <param-slider
             label="Velocidade"
             description="Tick rate de todas as simulações"
-            v-model="speed"
+            :model-value="speed"
             :min="1"
             :max="8000"
             :step="1"
