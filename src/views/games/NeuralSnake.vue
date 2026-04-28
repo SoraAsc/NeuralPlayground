@@ -20,6 +20,9 @@ const {
   startTesting,
   pauseSimulation,
   // resetSimulation,
+
+  tickRate,
+  setTickRate,
 } = useNeuralSnake(game)
 
 const currentSimulation = computed(() =>
@@ -168,6 +171,8 @@ const isAllTraining = computed(
       :simulation="currentSimulation ?? null"
       :reward-history="currentSimulation?.rewardHistory ?? []"
       :episode="episodes"
+      v-model:speed="tickRate"
+      @update:speed="setTickRate"
     />
   </main>
 </template>

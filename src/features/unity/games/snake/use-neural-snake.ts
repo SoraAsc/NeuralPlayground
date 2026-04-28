@@ -15,6 +15,7 @@ const MAX_REWARDS_HISTORY = 1000
 export function useNeuralSnake(game: Ref<InstanceType<typeof GameTemplate> | null>) {
   const { theme } = useTheme()
   const episodes = ref(0)
+  const tickRate = ref(1)
   const simulations = ref<SimulationI[]>([])
   const currentSimulationIndex = ref<number | null>(null)
 
@@ -43,6 +44,11 @@ export function useNeuralSnake(game: Ref<InstanceType<typeof GameTemplate> | nul
       const sim = simulations.value.find((s) => s.index === index)
       if (sim) episodes.value = sim.episodes
     }
+  }
+
+  const setTickRate = (value: number) => {
+    tickRate.value = value
+    game.value?.sendMessage('WebInterfaceObject', 'SetSimulationTickRate', value)
   }
 
   const handleSimulationCreated = (event: CustomEvent<{ index: number }>) => {
@@ -157,5 +163,8 @@ export function useNeuralSnake(game: Ref<InstanceType<typeof GameTemplate> | nul
     startTraining,
     startTesting,
     pauseSimulation,
+
+    tickRate,
+    setTickRate,
   }
 }

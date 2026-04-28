@@ -1,14 +1,22 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { StatRow, InfoSection } from '@/features/unity/ui/SimulationPanel.vue'
 import SimulationPanel from '@/features/unity/ui/SimulationPanel.vue'
 import type { SimulationI } from '../use-neural-snake'
+import ParamSlider from '@/features/game/ui/ParamSlider.vue'
+import { Globe } from '@lucide/vue'
 
 const props = defineProps<{
   simulation?: SimulationI | null
   rewardHistory?: number[]
   episode: number
 }>()
+
+const emit = defineEmits<{
+  'update:speed': [value: number]
+}>()
+
+const speed = ref(8)
 
 const statRows = computed<StatRow[]>(() => {
   const s = props.simulation
@@ -128,7 +136,31 @@ const infoSections: InfoSection[] = [
     default-tab="stats"
   >
     <template #params>
-      <!-- TODO: adicionar controles de hiperparâmetros aqui -->
+      <div class="flex flex-col divide-y divide-border/40">
+        <section class="px-4 py-4 flex flex-col gap-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-1.5">
+              <globe class="h-3 w-3 text-muted-foreground/60" />
+              <span class="text-[10px] uppercase tracking-widest text-muted-foreground font-medium">
+                Globais
+              </span>
+            </div>
+            <span class="text-[10px] text-muted-foreground/40">afeta todas as sims</span>
+          </div>
+
+          <param-slider
+            label="Velocidade"
+            description="Tick rate de todas as simulações"
+            v-model="speed"
+            :min="1"
+            :max="8000"
+            :step="1"
+            format="int"
+            :log-scale="true"
+            @update:model-value="emit('update:speed', $event)"
+          />
+        </section>
+      </div>
     </template>
   </simulation-panel>
 </template>
