@@ -19,7 +19,7 @@ const {
   startTraining,
   startTesting,
   pauseSimulation,
-  // resetSimulation,
+  resetSimulation,
 
   tickRate,
   setTickRate,
@@ -161,6 +161,7 @@ const isAllTraining = computed(
             size="icon"
             class="rounded-lg"
             :disabled="currentSimulationIndex === null"
+            @click="resetSimulation"
           >
             <rotate-ccw />
           </base-button>

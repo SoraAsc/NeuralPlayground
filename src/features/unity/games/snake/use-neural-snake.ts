@@ -29,6 +29,12 @@ export function useNeuralSnake(game: Ref<InstanceType<typeof GameTemplate> | nul
     if (currentSimulationIndex.value === -1) changeSimulationFocus(-1)
   }
 
+  const resetSimulation = () => {
+    const index = currentSimulationIndex.value ?? -1
+    game.value?.sendMessage('WebInterfaceObject', 'ResetSim', index)
+    if (index === -1) changeSimulationFocus(-1)
+  }
+
   const syncBackgroundColor = async () => {
     await nextTick()
     const hex = getVariableHex('--card')
@@ -163,6 +169,7 @@ export function useNeuralSnake(game: Ref<InstanceType<typeof GameTemplate> | nul
     startTraining,
     startTesting,
     pauseSimulation,
+    resetSimulation,
 
     tickRate,
     setTickRate,
