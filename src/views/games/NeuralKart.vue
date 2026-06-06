@@ -2,8 +2,12 @@
 import { onMounted, onUnmounted, ref } from 'vue'
 import { initPixi, pixiApp } from '@/shared/pixijs/pixi-app'
 import { startGameLoop } from '@/shared/ecs/timer'
-import { inputSystem, movementSystem, renderSystem } from '@/features/kart/systems'
-import { spawnKart } from '@/features/kart/kart'
+import {
+  inputSystem,
+  movementSystem,
+  renderSystem,
+} from '@/features/pixijs/neural-kart/kart/systems'
+import { spawnKart } from '@/features/pixijs/neural-kart/kart/kart'
 
 const gameContainer = ref<HTMLDivElement | null>(null)
 
@@ -17,13 +21,13 @@ onMounted(async () => {
   if (gameContainer.value) {
     await initPixi(gameContainer.value)
 
-    // Spawn kart at center
+    // 1. Spawn kart at center
     await spawnKart(pixiApp.screen.width / 2, pixiApp.screen.height / 2)
 
-    // 2. Inicia o Game Loop (Koota ECS + Pixi Ticker)
+    // 2. Start the Game Loop (Koota ECS + Pixi Ticker)
     startGameLoop(updateGameSystems)
 
-    console.log('🎮 Jogo inicializado com sucesso!')
+    console.log('Game Started!')
   }
 })
 
