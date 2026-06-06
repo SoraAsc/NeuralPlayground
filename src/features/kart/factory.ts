@@ -40,7 +40,7 @@ export const KART_DEFINITIONS: Record<KartType, KartDefinition> = {
   },
 }
 
-export async function createKart(type: KartType, x: number, y: number) {
+export async function createKart(type: KartType, x: number, y: number, rotation: number = 0) {
   const definition = KART_DEFINITIONS[type]
 
   // Load texture
@@ -63,7 +63,7 @@ export async function createKart(type: KartType, x: number, y: number) {
   pixiApp.stage.addChild(kartView)
 
   return world.spawn(
-    Transform({ x, y, rotation: 0 }),
+    Transform({ x, y, rotation }),
     Velocity({ x: 0, y: 0, speed: 0 }),
     Input({ forward: 0, steer: 0 }),
     KartConfig(definition.config),
