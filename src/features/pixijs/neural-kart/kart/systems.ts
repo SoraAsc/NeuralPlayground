@@ -10,8 +10,15 @@ const keys = {
   d: false,
 }
 
-const sensorGraphics = new Graphics()
-pixiApp.stage.addChild(sensorGraphics)
+let sensorGraphics: Graphics | null = null
+
+function getSensorGraphics(): Graphics {
+  if (!sensorGraphics) {
+    sensorGraphics = new Graphics()
+    pixiApp.stage.addChild(sensorGraphics)
+  }
+  return sensorGraphics
+}
 
 window.addEventListener('keydown', (e) => {
   if (e.key.toLowerCase() in keys) keys[e.key.toLowerCase() as keyof typeof keys] = true
@@ -54,9 +61,7 @@ export function movementSystem(delta: number) {
         // Friction
         if (Math.abs(velocity.speed) > config.friction * delta) {
           velocity.speed -= Math.sign(velocity.speed) * config.friction * delta
-        } else {
-          velocity.speed = 0
-        }
+        } else velocity.speed = 0
       }
 
       // Clamp speed
@@ -72,7 +77,8 @@ export function movementSystem(delta: number) {
 }
 
 export function renderSystem() {
-  sensorGraphics.clear()
+  const sg = getSensorGraphics()
+  sg.clear()
 
   world.query(Transform, Sprite, AISensors).updateEach(([transform, sprite, sensors]) => {
     if (!sprite || !sprite.view) return
@@ -83,8 +89,6 @@ export function renderSystem() {
 
     // Render sensor rays if active
     if (sensors.showVisuals) {
-      sensorGraphics.moveTo(transform.x, transform.y)
-
       const startAngle = -Math.PI / 2 // 90 degrees left
       const endAngle = Math.PI / 2 // 90 degrees right
       const step = sensors.numRays > 1 ? (endAngle - startAngle) / (sensors.numRays - 1) : 0
@@ -93,14 +97,11 @@ export function renderSystem() {
         const angle = transform.rotation + startAngle + i * step
         const dist = sensors.distances[i] || sensors.maxDistance
 
-        sensorGraphics.moveTo(transform.x, transform.y)
-        sensorGraphics.lineTo(
-          transform.x + Math.cos(angle) * dist,
-          transform.y + Math.sin(angle) * dist,
-        )
+        sg.moveTo(transform.x, transform.y)
+        sg.lineTo(transform.x + Math.cos(angle) * dist, transform.y + Math.sin(angle) * dist)
       }
 
-      sensorGraphics.stroke({ width: 1, color: 0x00ff00, alpha: 0.5 })
+      sg.stroke({ width: 1, color: 0x00ff00, alpha: 0.5 })
     }
   })
 }
