@@ -8,6 +8,7 @@ import {
   movementSystem,
   renderSystem,
 } from '@/features/pixijs/neural-kart/kart/systems'
+import { aiSystem } from '@/features/pixijs/neural-kart/ai/system'
 import { spawnKart } from '@/features/pixijs/neural-kart/kart/kart'
 import {
   CircuitTrackGenerator,
@@ -15,6 +16,7 @@ import {
   trackCollisionSystem,
   checkpointSystem,
   spawnKarts,
+  sensorSystem,
 } from '@/features/pixijs/neural-kart/track'
 import { Transform } from '@/features/pixijs/neural-kart/kart/traits'
 
@@ -27,6 +29,7 @@ const activeKart = computed(() => karts.value[selectedKartIndex.value])
 
 let collisionSystem: () => void
 let cpSystem: () => void
+const sensors = ref<(() => void) | null>(null)
 
 function toggleCamera() {
   cameraMode.value = cameraMode.value === 'full' ? 'follow' : 'full'
@@ -52,6 +55,8 @@ const cameraPivot = { x: 0, y: 0 }
 
 function updateGameSystems(delta: number) {
   inputSystem()
+  sensors.value?.()
+  aiSystem()
   movementSystem(delta)
   collisionSystem?.()
   cpSystem?.()
@@ -95,12 +100,13 @@ onMounted(async () => {
     // 3. Setup Systems
     collisionSystem = trackCollisionSystem(track)
     cpSystem = checkpointSystem(track)
+    sensors.value = sensorSystem(track)
 
     // 4. Spawn karts at spawn points
-    const playerKart = await spawnKart(0, 0, 0, 'sport')
-    karts.value = [playerKart]
-    // const botKart = await spawnKart(0, 0, 0, 'compact')
-    // karts.value = [playerKart, botKart]
+    const playerKart = await spawnKart(0, 0, 0, 'sport', 'manual')
+    // karts.value = [playerKart]
+    const botKart = await spawnKart(0, 0, 0, 'compact', 'ai')
+    karts.value = [playerKart, botKart]
     spawnKarts(track, karts.value)
 
     // 5. Start the Game Loop
@@ -122,6 +128,7 @@ onUnmounted(() => {
     <div class="game-hud">
       <h1>Neural Kart</h1>
       <p>WASD: Drive | C: Camera | Tab: Switch Kart</p>
+      <p>K: Sensors</p>
       <div class="info">
         <span>Mode: {{ cameraMode === 'full' ? 'Full Track' : 'Follow Kart' }}</span>
         <span v-if="karts.length > 0"> (Kart {{ selectedKartIndex + 1 }}/{{ karts.length }})</span>

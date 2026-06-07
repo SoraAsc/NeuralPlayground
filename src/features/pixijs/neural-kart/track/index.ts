@@ -6,6 +6,7 @@ export * from './track-collision'
 export * from './track-spawns'
 export * from './track-checkpoints'
 export * from './track-start-line'
+export * from './sensor-system'
 
 export * from './generators/oval'
 export * from './generators/snake'

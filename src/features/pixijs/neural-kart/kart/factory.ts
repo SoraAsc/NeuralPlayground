@@ -1,7 +1,7 @@
 import { Assets, Sprite as PixiSprite } from 'pixi.js'
 import { pixiApp } from '@/shared/pixijs/pixi-app'
 import { world } from '@/shared/ecs/world'
-import { Transform, Velocity, Input, KartConfig, Sprite } from './traits'
+import { Transform, Velocity, Input, KartConfig, Sprite, AISensors } from './traits'
 
 export type KartType = 'compact' | 'sport'
 
@@ -40,7 +40,13 @@ export const KART_DEFINITIONS: Record<KartType, KartDefinition> = {
   },
 }
 
-export async function createKart(type: KartType, x: number, y: number, rotation: number = 0) {
+export async function createKart(
+  type: KartType,
+  x: number,
+  y: number,
+  rotation: number = 0,
+  source: 'manual' | 'ai' = 'manual',
+) {
   const definition = KART_DEFINITIONS[type]
 
   // Load texture
@@ -64,12 +70,13 @@ export async function createKart(type: KartType, x: number, y: number, rotation:
   return world.spawn(
     Transform({ x, y, rotation }),
     Velocity({ x: 0, y: 0, speed: 0 }),
-    Input({ forward: 0, steer: 0 }),
+    Input({ forward: 0, steer: 0, source }),
     KartConfig({
       ...definition.config,
       width: targetWidth,
       length: targetLength,
     }),
     Sprite({ view: kartView }),
+    AISensors({ distances: [], numRays: 5, maxDistance: 200, showVisuals: true }),
   )
 }
