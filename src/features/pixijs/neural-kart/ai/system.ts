@@ -1,16 +1,18 @@
 import { world } from '@/shared/ecs/world'
-import { Input, AISensors, Velocity } from '../kart/traits'
+import { Input, AISensors, Velocity, KartConfig } from '../kart/traits'
 
 export function aiSystem() {
-  world.query(Input, AISensors, Velocity).updateEach(([input, sensors, velocity]) => {
-    if (input.source !== 'ai') return
+  world
+    .query(Input, AISensors, Velocity, KartConfig)
+    .updateEach(([input, sensors, velocity, config]) => {
+      if (input.source !== 'ai') return
+      // Features (inputs for NN):
+      const features = [
+        ...sensors.distances.map((d) => d / sensors.maxDistance),
+        ...sensors.rearDistances.map((d) => d / sensors.maxDistance),
+        velocity.speed / config.maxSpeed,
+      ]
 
-    // Features (inputs for NN):
-    const features = [
-      ...sensors.distances.map((d: number) => d / sensors.maxDistance),
-      velocity.speed / 400,
-    ]
-
-    console.log('AI Features:', features)
-  })
+      console.log('AI Features:', features)
+    })
 }

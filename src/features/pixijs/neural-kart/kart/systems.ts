@@ -89,6 +89,7 @@ export function renderSystem() {
 
     // Render sensor rays if active
     if (sensors.showVisuals) {
+      // Front
       const startAngle = -Math.PI / 2 // 90 degrees left
       const endAngle = Math.PI / 2 // 90 degrees right
       const step = sensors.numRays > 1 ? (endAngle - startAngle) / (sensors.numRays - 1) : 0
@@ -102,6 +103,20 @@ export function renderSystem() {
       }
 
       sg.stroke({ width: 1, color: 0x00ff00, alpha: 0.5 })
+
+      // Rear
+      const rearHalfArc = Math.PI / 4
+      const rearStep = sensors.numRearRays > 1 ? (rearHalfArc * 2) / (sensors.numRearRays - 1) : 0
+
+      for (let i = 0; i < sensors.numRearRays; i++) {
+        const angle = transform.rotation + Math.PI - rearHalfArc + i * rearStep
+        const dist = sensors.rearDistances[i] ?? sensors.maxDistance
+
+        sg.moveTo(transform.x, transform.y)
+        sg.lineTo(transform.x + Math.cos(angle) * dist, transform.y + Math.sin(angle) * dist)
+      }
+
+      sg.stroke({ width: 1, color: 0xff4444, alpha: 0.5 })
     }
   })
 }

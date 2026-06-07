@@ -21,7 +21,9 @@ export const Input = trait({
 
 export const AISensors = trait(() => ({
   distances: [] as number[],
+  rearDistances: [] as number[],
   numRays: 5,
+  numRearRays: 3,
   maxDistance: 200,
   showVisuals: true,
 }))

@@ -77,6 +77,13 @@ export async function createKart(
       length: targetLength,
     }),
     Sprite({ view: kartView }),
-    AISensors({ distances: [], numRays: 5, maxDistance: 200, showVisuals: true }),
+    AISensors({
+      distances: [],
+      numRays: 5,
+      numRearRays: 3,
+      rearDistances: [],
+      maxDistance: 200,
+      showVisuals: true,
+    }),
   )
 }

@@ -7,11 +7,10 @@ export const sensorSystem = (track: Track) => {
   return () => {
     world.query(Transform, AISensors).updateEach(([transform, sensors]) => {
       const { x, y, rotation } = transform
-      const { numRays, maxDistance } = sensors
-
-      const distances: number[] = []
+      const { numRays, numRearRays, maxDistance } = sensors
 
       // Arc of 180 degrees centered at the front
+      const distances: number[] = []
       const startAngle = -Math.PI / 2
       const endAngle = Math.PI / 2
       const step = numRays > 1 ? (endAngle - startAngle) / (numRays - 1) : 0
@@ -20,25 +19,40 @@ export const sensorSystem = (track: Track) => {
         const rayAngle = rotation + startAngle + i * step
         const dirX = Math.cos(rayAngle)
         const dirY = Math.sin(rayAngle)
-
         let distance = maxDistance
 
-        // Ray marching (simple step-based)
-        // Step size of 5 pixels for performance, can be refined
+        // Ray marching (simple step-based) - Step size of 5 pixels
         for (let d = 0; d < maxDistance; d += 5) {
-          const checkX = x + dirX * d
-          const checkY = y + dirY * d
-
-          if (!isRoad(track, checkX, checkY)) {
+          if (!isRoad(track, x + dirX * d, y + dirY * d)) {
             distance = d
             break
           }
         }
-
         distances.push(distance)
       }
 
+      // Arc of 90 degrees centered at the rear
+      const rearDistances: number[] = []
+      const rearHalfArc = Math.PI / 4 // 45 for each side
+      const rearStep = numRearRays > 1 ? (rearHalfArc * 2) / (numRearRays - 1) : 0
+
+      for (let i = 0; i < numRearRays; i++) {
+        const rayAngle = rotation + Math.PI - rearHalfArc + i * rearStep
+        const dirX = Math.cos(rayAngle)
+        const dirY = Math.sin(rayAngle)
+        let distance = maxDistance
+
+        // Ray marching (simple step-based) - Step size of 5 pixels
+        for (let d = 0; d < maxDistance; d += 5) {
+          if (!isRoad(track, x + dirX * d, y + dirY * d)) {
+            distance = d
+            break
+          }
+        }
+        rearDistances.push(distance)
+      }
       sensors.distances = distances
+      sensors.rearDistances = rearDistances
     })
   }
 }
