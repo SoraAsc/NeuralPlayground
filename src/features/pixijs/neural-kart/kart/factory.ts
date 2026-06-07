@@ -53,12 +53,11 @@ export async function createKart(type: KartType, x: number, y: number, rotation:
   // Base scale
   const targetWidth = 20
   const scale = targetWidth / texture.width
+  const targetLength = texture.height * scale
   kartView.scale.set(scale)
 
   // Apply tint if available
-  if (definition.tint) {
-    kartView.tint = definition.tint
-  }
+  if (definition.tint) kartView.tint = definition.tint
 
   pixiApp.stage.addChild(kartView)
 
@@ -66,7 +65,11 @@ export async function createKart(type: KartType, x: number, y: number, rotation:
     Transform({ x, y, rotation }),
     Velocity({ x: 0, y: 0, speed: 0 }),
     Input({ forward: 0, steer: 0 }),
-    KartConfig(definition.config),
+    KartConfig({
+      ...definition.config,
+      width: targetWidth,
+      length: targetLength,
+    }),
     Sprite({ view: kartView }),
   )
 }

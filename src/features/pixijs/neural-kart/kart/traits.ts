@@ -24,6 +24,8 @@ export const KartConfig = trait({
   deceleration: 300,
   friction: 100,
   steeringSpeed: 4,
+  width: 20,
+  length: 30,
 })
 
 export const Sprite = trait(() => ({
