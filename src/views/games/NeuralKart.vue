@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, computed } from 'vue'
+import { onMounted, onUnmounted, ref, computed, reactive } from 'vue'
 import type { Entity } from 'koota'
 import { initPixi, pixiApp } from '@/shared/pixijs/pixi-app'
 import { startGameLoop } from '@/shared/ecs/timer'
@@ -7,6 +7,7 @@ import {
   inputSystem,
   movementSystem,
   renderSystem,
+  cleanupSystem,
 } from '@/features/pixijs/neural-kart/kart/systems'
 import { aiSystem } from '@/features/pixijs/neural-kart/ai/system'
 import { spawnKart } from '@/features/pixijs/neural-kart/kart/kart'
@@ -18,17 +19,31 @@ import {
   spawnKarts,
   sensorSystem,
 } from '@/features/pixijs/neural-kart/track'
-import { Transform } from '@/features/pixijs/neural-kart/kart/traits'
+import { Transform, AI, Velocity, Input } from '@/features/pixijs/neural-kart/kart/traits'
+import { Progress } from '@/features/pixijs/neural-kart/track/track-checkpoints'
 
 const gameContainer = ref<HTMLDivElement | null>(null)
 const cameraMode = ref<'full' | 'follow'>('follow')
 const karts = ref<Entity[]>([])
 const selectedKartIndex = ref(0)
+const timeMultiplier = ref(1)
+
+// Inspection State (Manual sync for reactivity)
+const inspection = reactive({
+  source: '',
+  speed: 0,
+  cp: 0,
+  laps: 0,
+  time: 0,
+  maxTime: 10,
+  reward: 0,
+})
 
 const activeKart = computed(() => karts.value[selectedKartIndex.value])
 
 let collisionSystem: () => void
-let cpSystem: () => void
+let cpSystem: (delta: number) => void
+let aiUpdate: () => void
 const sensors = ref<(() => void) | null>(null)
 
 function toggleCamera() {
@@ -54,13 +69,34 @@ const handleKeyDown = (e: KeyboardEvent) => {
 const cameraPivot = { x: 0, y: 0 }
 
 function updateGameSystems(delta: number) {
-  inputSystem()
-  sensors.value?.()
-  aiSystem()
-  movementSystem(delta)
-  collisionSystem?.()
-  cpSystem?.()
+  const steps = timeMultiplier.value
+  for (let i = 0; i < steps; i++) {
+    inputSystem()
+    sensors.value?.()
+    collisionSystem?.()
+    cpSystem?.(delta)
+    aiUpdate?.()
+    movementSystem(delta)
+    cleanupSystem()
+  }
+
   renderSystem()
+
+  // Sync Inspection Data
+  if (activeKart.value) {
+    const input = activeKart.value.get(Input)
+    const vel = activeKart.value.get(Velocity)
+    const prog = activeKart.value.get(Progress)
+    const ai = activeKart.value.get(AI)
+
+    inspection.source = input?.source ?? 'unknown'
+    inspection.speed = vel?.speed ?? 0
+    inspection.cp = prog?.currentCheckpoint ?? 0
+    inspection.laps = prog?.laps ?? 0
+    inspection.time = prog?.timeSinceLastCheckpoint ?? 0
+    inspection.maxTime = prog?.maxTimePerCheckpoint ?? 10
+    inspection.reward = ai?.env?.totalReward ?? 0
+  }
 
   // Camera Logic
   if (cameraMode.value === 'follow' && activeKart.value) {
@@ -101,12 +137,13 @@ onMounted(async () => {
     collisionSystem = trackCollisionSystem(track)
     cpSystem = checkpointSystem(track)
     sensors.value = sensorSystem(track)
+    aiUpdate = aiSystem(track)
 
     // 4. Spawn karts at spawn points
     const playerKart = await spawnKart(0, 0, 0, 'sport', 'manual')
-    // karts.value = [playerKart]
     const botKart = await spawnKart(0, 0, 0, 'compact', 'ai')
-    karts.value = [playerKart, botKart]
+    const botKart2 = await spawnKart(0, 0, 0, 'compact', 'ai')
+    karts.value = [playerKart, botKart, botKart2]
     spawnKarts(track, karts.value)
 
     // 5. Start the Game Loop
@@ -132,6 +169,51 @@ onUnmounted(() => {
       <div class="info">
         <span>Mode: {{ cameraMode === 'full' ? 'Full Track' : 'Follow Kart' }}</span>
         <span v-if="karts.length > 0"> (Kart {{ selectedKartIndex + 1 }}/{{ karts.length }})</span>
+      </div>
+
+      <div class="controls mt-4">
+        <label>Simulation Speed: {{ timeMultiplier }}x</label>
+        <div class="flex gap-2">
+          <button @click="timeMultiplier = 1" :class="{ active: timeMultiplier === 1 }">1x</button>
+          <button @click="timeMultiplier = 2" :class="{ active: timeMultiplier === 2 }">2x</button>
+          <button @click="timeMultiplier = 5" :class="{ active: timeMultiplier === 5 }">5x</button>
+          <button @click="timeMultiplier = 10" :class="{ active: timeMultiplier === 10 }">
+            10x
+          </button>
+          <button @click="timeMultiplier = 100" :class="{ active: timeMultiplier === 100 }">
+            100x
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Inspection Panel -->
+    <div v-if="activeKart" class="inspection-panel">
+      <h3>Kart Inspection</h3>
+      <div class="stats-grid">
+        <div class="stat-item">
+          <label>Source</label>
+          <span>{{ inspection.source }}</span>
+        </div>
+        <div class="stat-item">
+          <label>Speed</label>
+          <span>{{ Math.round(inspection.speed) }}</span>
+        </div>
+        <div class="stat-item">
+          <label>Progress</label>
+          <span>CP: {{ inspection.cp }} | Laps: {{ inspection.laps }}</span>
+        </div>
+        <div class="stat-item">
+          <label>Timeout</label>
+          <span :class="{ warning: inspection.time > 7 }">
+            {{ inspection.time.toFixed(1) }}s / {{ inspection.maxTime }}s
+          </span>
+        </div>
+
+        <div class="stat-item full">
+          <label>AI Reward (Total)</label>
+          <span class="reward">{{ inspection.reward.toFixed(2) }}</span>
+        </div>
       </div>
     </div>
   </main>
@@ -169,5 +251,87 @@ onUnmounted(() => {
   margin-top: 5px;
   font-size: 0.9rem;
   opacity: 0.8;
+}
+
+.mt-4 {
+  margin-top: 1rem;
+}
+
+.flex {
+  display: flex;
+}
+
+.gap-2 {
+  gap: 0.5rem;
+}
+
+.controls button {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 4px 12px;
+  cursor: pointer;
+  pointer-events: auto;
+  border-radius: 4px;
+}
+
+.controls button.active {
+  background: #4caf50;
+  border-color: #4caf50;
+}
+
+.inspection-panel {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 280px;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 20px;
+  color: white;
+  font-family: monospace;
+}
+
+.inspection-panel h3 {
+  margin: 0 0 15px 0;
+  font-size: 1.1rem;
+  color: #4caf50;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-item label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 2px;
+}
+
+.stat-item span {
+  font-size: 0.95rem;
+}
+
+.stat-item.full {
+  grid-column: 1 / -1;
+}
+
+.reward {
+  color: #ffeb3b;
+  font-weight: bold;
+}
+
+.warning {
+  color: #ff5252;
 }
 </style>

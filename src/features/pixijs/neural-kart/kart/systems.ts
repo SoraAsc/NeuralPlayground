@@ -1,7 +1,7 @@
 import { Graphics } from 'pixi.js'
 import { pixiApp } from '@/shared/pixijs/pixi-app'
 import { world } from '@/shared/ecs/world'
-import { Transform, Velocity, Input, KartConfig, Sprite, AISensors } from './traits'
+import { Transform, Velocity, Input, KartConfig, Sprite, AISensors, AI, Destroyed } from './traits'
 
 const keys = {
   w: false,
@@ -34,6 +34,21 @@ window.addEventListener('keydown', (e) => {
 window.addEventListener('keyup', (e) => {
   if (e.key.toLowerCase() in keys) keys[e.key.toLowerCase() as keyof typeof keys] = false
 })
+
+export function cleanupSystem() {
+  world.query(Destroyed).updateEach((_, entity) => {
+    // Cleanup Sprite
+    const sprite = entity.get(Sprite)
+    if (sprite) sprite.view?.destroy({ children: true })
+
+    // Cleanup AI (Free WASM memory)
+    const ai = entity.get(AI)
+    if (ai) ai.env?.dispose()
+
+    // Finally destroy the entity
+    entity.destroy()
+  })
+}
 
 export function inputSystem() {
   world.query(Input).updateEach(([input]) => {

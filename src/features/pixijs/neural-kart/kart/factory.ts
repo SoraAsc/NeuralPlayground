@@ -1,7 +1,9 @@
 import { Assets, Sprite as PixiSprite } from 'pixi.js'
 import { pixiApp } from '@/shared/pixijs/pixi-app'
 import { world } from '@/shared/ecs/world'
-import { Transform, Velocity, Input, KartConfig, Sprite, AISensors } from './traits'
+import { Transform, Velocity, Input, KartConfig, Sprite, AISensors, AI } from './traits'
+import { Progress } from '../track/track-checkpoints'
+import { NeuralKartEnvironment } from '../ai/neural-env'
 
 export type KartType = 'compact' | 'sport'
 
@@ -67,7 +69,7 @@ export async function createKart(
 
   pixiApp.stage.addChild(kartView)
 
-  return world.spawn(
+  const entity = world.spawn(
     Transform({ x, y, rotation }),
     Velocity({ x: 0, y: 0, speed: 0 }),
     Input({ forward: 0, steer: 0, source }),
@@ -85,5 +87,15 @@ export async function createKart(
       maxDistance: 200,
       showVisuals: true,
     }),
+  Progress({ currentCheckpoint: 0, laps: 0 }),
   )
+
+  if (source === 'ai' || source === 'manual') {
+    // Inputs: sensors.distances (numRays) + sensors.rearDistances (numRearRays) + speed = 5 + 3 + 1 = 9
+    // Outputs: forward + steer = 2
+    const env = await NeuralKartEnvironment.create(9, 2)
+    entity.add(AI({ env }))
+  }
+
+  return entity
 }
