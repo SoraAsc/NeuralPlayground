@@ -7,6 +7,8 @@ type PendingStep = {
   values: number[]
 }
 
+const CHECKPOINT_URL = '/models/neural-kart.nnw'
+
 /**
  * Unique PPO Agent, shared between all the karts
  */
@@ -18,6 +20,7 @@ class SharedAgent {
   critic!: NeuralNetwork
   agent!: PPOAgent
   activeEnvs = 0
+  version = 0
   private stepsSinceTrain = 0
 
   private constructor(
@@ -58,6 +61,11 @@ class SharedAgent {
       .addDense(128, 'tanh')
       .addDense(1, 'linear')
 
+    await this.tryLoadPublishedCheckpoint()
+    this.createAgent()
+  }
+
+  private createAgent() {
     this.agent = this.nnw.createPPOAgent(this.actor, this.critic, {
       actionSpace: 'continuous',
       optimizer: 'adamw',
@@ -73,6 +81,42 @@ class SharedAgent {
       maxGradNorm: 0.5,
       epochs: 2,
     })
+  }
+
+  private async tryLoadPublishedCheckpoint() {
+    try {
+      const response = await fetch(CHECKPOINT_URL, { cache: 'no-store' })
+      if (!response.ok) return
+      this.nnw.loadCheckpoint(await response.arrayBuffer(), this.models())
+      console.info(`Neural Kart: checkpoint carregado de ${CHECKPOINT_URL}`)
+    } catch (error) {
+      console.warn('Neural Kart: não foi possível carregar o checkpoint publicado', error)
+    }
+  }
+
+  exportCheckpoint(): ArrayBuffer {
+    return this.nnw.saveCheckpoint(this.models())
+  }
+
+  importCheckpoint(buffer: ArrayBuffer, restartAgent = true) {
+    this.nnw.loadCheckpoint(buffer, this.models())
+    if (restartAgent) this.restartAgent()
+  }
+
+  resetFromScratch() {
+    this.nnw.resetModels(this.models())
+    this.restartAgent()
+  }
+
+  private models() {
+    return { actor: this.actor, critic: this.critic }
+  }
+
+  private restartAgent() {
+    if (this.agent) this.agent.dispose()
+    this.createAgent()
+    this.stepsSinceTrain = 0
+    this.version += 1
   }
 
   /** Called after each storeTransition */
@@ -104,6 +148,7 @@ export class NeuralKartEnvironment {
   private shared: SharedAgent | null = null
   private pendingStep: PendingStep | null = null
   private disposed = false
+  private sharedVersion = 0
 
   private constructor(inputSize: number, outputSize: number) {
     this.inputSize = inputSize
@@ -122,9 +167,28 @@ export class NeuralKartEnvironment {
     SharedAgent.reset()
   }
 
+  static async exportSharedCheckpoint() {
+    const shared = await SharedAgent['promise']
+    if (!shared) throw new Error('Agente Neural Kart ainda não foi inicializado')
+    return shared.exportCheckpoint()
+  }
+
+  static async importSharedCheckpoint(buffer: ArrayBuffer) {
+    const shared = await SharedAgent['promise']
+    if (!shared) throw new Error('Agente Neural Kart ainda não foi inicializado')
+    shared.importCheckpoint(buffer)
+  }
+
+  static async resetSharedFromScratch() {
+    const shared = await SharedAgent['promise']
+    if (!shared) throw new Error('Agente Neural Kart ainda não foi inicializado')
+    shared.resetFromScratch()
+  }
+
   private async init() {
     this.shared = await SharedAgent.get(this.inputSize, this.outputSize, 512)
     this.shared.activeEnvs += 1
+    this.sharedVersion = this.shared.version
   }
 
   reset(): number[] {
@@ -140,6 +204,15 @@ export class NeuralKartEnvironment {
   step(inputs: number[], reward: number, done: boolean) {
     if (this.disposed || !this.shared) return null
     const agent = this.shared.agent
+
+    if (this.sharedVersion !== this.shared.version) {
+      this.pendingStep = null
+      this.sharedVersion = this.shared.version
+      this.reward = 0
+      this.lastReward = 0
+      this.totalReward = 0
+      this.outputs.fill(0)
+    }
 
     this.inputs = inputs.slice(0, this.inputSize)
     this.done = done

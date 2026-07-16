@@ -10,6 +10,7 @@ import {
   cleanupSystem,
 } from '@/features/pixijs/neural-kart/kart/systems'
 import { aiSystem } from '@/features/pixijs/neural-kart/ai/system'
+import { NeuralKartEnvironment } from '@/features/pixijs/neural-kart/ai/neural-env'
 import { spawnKart } from '@/features/pixijs/neural-kart/kart/kart'
 import {
   CircuitTrackGenerator,
@@ -27,6 +28,8 @@ const cameraMode = ref<'full' | 'follow'>('follow')
 const karts = ref<Entity[]>([])
 const selectedKartIndex = ref(0)
 const timeMultiplier = ref(1)
+const checkpointStatus = ref('Auto-load: /models/neural-kart.nnw')
+const checkpointInput = ref<HTMLInputElement | null>(null)
 
 // Inspection State (Manual sync for reactivity)
 const inspection = reactive({
@@ -62,6 +65,48 @@ const handleKeyDown = (e: KeyboardEvent) => {
   if (e.key === 'Tab') {
     e.preventDefault()
     nextKart()
+  }
+}
+
+async function saveCheckpoint() {
+  try {
+    const buffer = await NeuralKartEnvironment.exportSharedCheckpoint()
+    const url = URL.createObjectURL(new Blob([buffer], { type: 'application/octet-stream' }))
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = 'neural-kart.nnw'
+    anchor.click()
+    URL.revokeObjectURL(url)
+    checkpointStatus.value = 'Checkpoint salvo'
+  } catch (error) {
+    checkpointStatus.value = error instanceof Error ? error.message : 'Falha ao salvar checkpoint'
+  }
+}
+
+function chooseCheckpoint() {
+  checkpointInput.value?.click()
+}
+
+async function loadCheckpoint(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  try {
+    await NeuralKartEnvironment.importSharedCheckpoint(await file.arrayBuffer())
+    checkpointStatus.value = `Carregado: ${file.name}`
+  } catch (error) {
+    checkpointStatus.value = error instanceof Error ? error.message : 'Falha ao carregar checkpoint'
+  } finally {
+    input.value = ''
+  }
+}
+
+async function clearCheckpoint() {
+  try {
+    await NeuralKartEnvironment.resetSharedFromScratch()
+    checkpointStatus.value = 'IA reinicializada do zero'
+  } catch (error) {
+    checkpointStatus.value = error instanceof Error ? error.message : 'Falha ao limpar IA'
   }
 }
 
@@ -155,6 +200,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeyDown)
+  NeuralKartEnvironment.disposeShared()
   pixiApp.destroy(true, { children: true, texture: true })
 })
 </script>
@@ -184,6 +230,13 @@ onUnmounted(() => {
             100x
           </button>
         </div>
+      </div>
+      <div class="controls checkpoint-controls mt-4">
+        <button @click="saveCheckpoint">Salvar IA</button>
+        <button @click="chooseCheckpoint">Carregar IA</button>
+        <button @click="clearCheckpoint">Limpar IA</button>
+        <input ref="checkpointInput" type="file" accept=".nnw,application/octet-stream" hidden @change="loadCheckpoint" />
+        <small>{{ checkpointStatus }}</small>
       </div>
     </div>
 
@@ -278,6 +331,18 @@ onUnmounted(() => {
 .controls button.active {
   background: #4caf50;
   border-color: #4caf50;
+}
+
+.checkpoint-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.checkpoint-controls small {
+  max-width: 280px;
+  opacity: 0.75;
 }
 
 .inspection-panel {
