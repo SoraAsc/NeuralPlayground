@@ -22,6 +22,9 @@ import {
 } from '@/features/pixijs/neural-kart/track'
 import { Transform, AI, Velocity, Input } from '@/features/pixijs/neural-kart/kart/traits'
 import { Progress } from '@/features/pixijs/neural-kart/track/track-checkpoints'
+import KartPanel from '@/features/pixijs/neural-kart/ui/KartPanel.vue'
+import BaseButton from '@/features/experiments/ui/BaseButton.vue'
+import { Camera, Focus, ScanLine } from '@lucide/vue'
 
 const gameContainer = ref<HTMLDivElement | null>(null)
 const cameraMode = ref<'full' | 'follow'>('follow')
@@ -187,8 +190,8 @@ onMounted(async () => {
     // 4. Spawn karts at spawn points
     // const playerKart = await spawnKart(0, 0, 0, 'sport', 'manual')
     const botKart = await spawnKart(0, 0, 0, 'compact', 'ai')
-    // const botKart2 = await spawnKart(0, 0, 0, 'compact', 'ai')
-    karts.value = [botKart]
+    const botKart2 = await spawnKart(0, 0, 0, 'sport', 'ai')
+    karts.value = [botKart, botKart2]
     spawnKarts(track, karts.value)
 
     // 5. Start the Game Loop
@@ -206,197 +209,85 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <main class="game-view">
-    <div ref="gameContainer" class="pixi-container" />
-    <div class="game-hud">
-      <h1>Neural Kart</h1>
-      <p>WASD: Drive | C: Camera | Tab: Switch Kart</p>
-      <p>K: Sensors</p>
-      <div class="info">
-        <span>Mode: {{ cameraMode === 'full' ? 'Full Track' : 'Follow Kart' }}</span>
-        <span v-if="karts.length > 0"> (Kart {{ selectedKartIndex + 1 }}/{{ karts.length }})</span>
+  <main class="flex flex-wrap justify-center gap-6 px-4 py-6">
+    <div class="w-2/3 grow border border-border bg-card">
+      <div class="flex items-center gap-2 overflow-x-auto border-b border-border px-4 py-2">
+        <base-button variant="primary" size="dot" show-dot :active="!!activeKart">
+          Kart {{ selectedKartIndex + 1 }}
+        </base-button>
+        <span class="ml-auto whitespace-nowrap text-[10px] text-muted-foreground/60">
+          C troca câmera · Tab troca kart · K exibe sensores
+        </span>
       </div>
 
-      <div class="controls mt-4">
-        <label>Simulation Speed: {{ timeMultiplier }}x</label>
-        <div class="flex gap-2">
-          <button @click="timeMultiplier = 1" :class="{ active: timeMultiplier === 1 }">1x</button>
-          <button @click="timeMultiplier = 2" :class="{ active: timeMultiplier === 2 }">2x</button>
-          <button @click="timeMultiplier = 5" :class="{ active: timeMultiplier === 5 }">5x</button>
-          <button @click="timeMultiplier = 10" :class="{ active: timeMultiplier === 10 }">
-            10x
-          </button>
-          <button @click="timeMultiplier = 100" :class="{ active: timeMultiplier === 100 }">
-            100x
-          </button>
+      <div class="group relative h-[60vh] overflow-hidden bg-[#111]">
+        <div ref="gameContainer" class="h-full w-full" />
+
+        <div
+          class="absolute right-6 top-1/2 flex -translate-y-1/2 flex-col items-center gap-2 rounded-xl border border-border/50 bg-background/40 p-1.5 shadow-2xl backdrop-blur-md"
+        >
+          <base-button
+            :variant="cameraMode === 'follow' ? 'primary' : 'outline'"
+            size="icon"
+            class="rounded-lg"
+            title="Seguir kart"
+            @click="cameraMode = 'follow'"
+          >
+            <focus />
+          </base-button>
+          <base-button
+            :variant="cameraMode === 'full' ? 'primary' : 'outline'"
+            size="icon"
+            class="rounded-lg"
+            title="Ver pista completa"
+            @click="cameraMode = 'full'"
+          >
+            <camera />
+          </base-button>
+          <div class="my-1 h-px w-4 bg-border/50" />
+          <base-button
+            variant="outline"
+            size="icon"
+            class="rounded-lg"
+            title="Próximo kart"
+            @click="nextKart"
+          >
+            <scan-line />
+          </base-button>
         </div>
-      </div>
-      <div class="controls checkpoint-controls mt-4">
-        <button @click="saveCheckpoint">Salvar IA</button>
-        <button @click="chooseCheckpoint">Carregar IA</button>
-        <button @click="clearCheckpoint">Limpar IA</button>
-        <input ref="checkpointInput" type="file" accept=".nnw,application/octet-stream" hidden @change="loadCheckpoint" />
-        <small>{{ checkpointStatus }}</small>
+
+        <div
+          class="pointer-events-none absolute bottom-4 left-4 flex items-center gap-2 border border-white/10 bg-black/45 px-2.5 py-1.5 text-[10px] text-white/70 backdrop-blur-md"
+        >
+          <span class="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
+          PPO treinando · {{ timeMultiplier }}x ·
+          {{ cameraMode === 'full' ? 'pista completa' : 'seguindo kart' }}
+        </div>
       </div>
     </div>
 
-    <!-- Inspection Panel -->
-    <div v-if="activeKart" class="inspection-panel">
-      <h3>Kart Inspection</h3>
-      <div class="stats-grid">
-        <div class="stat-item">
-          <label>Source</label>
-          <span>{{ inspection.source }}</span>
-        </div>
-        <div class="stat-item">
-          <label>Speed</label>
-          <span>{{ Math.round(inspection.speed) }}</span>
-        </div>
-        <div class="stat-item">
-          <label>Progress</label>
-          <span>CP: {{ inspection.cp }} | Laps: {{ inspection.laps }}</span>
-        </div>
-        <div class="stat-item">
-          <label>Timeout</label>
-          <span :class="{ warning: inspection.time > 7 }">
-            {{ inspection.time.toFixed(1) }}s / {{ inspection.maxTime }}s
-          </span>
-        </div>
+    <kart-panel
+      :speed="timeMultiplier"
+      :source="inspection.source"
+      :kart-speed="inspection.speed"
+      :checkpoint="inspection.cp"
+      :laps="inspection.laps"
+      :timeout="inspection.time"
+      :max-timeout="inspection.maxTime"
+      :reward="inspection.reward"
+      :checkpoint-status="checkpointStatus"
+      @update:speed="timeMultiplier = Math.max(1, Math.round($event))"
+      @save="saveCheckpoint"
+      @load="chooseCheckpoint"
+      @clear="clearCheckpoint"
+    />
 
-        <div class="stat-item full">
-          <label>AI Reward (Total)</label>
-          <span class="reward">{{ inspection.reward.toFixed(2) }}</span>
-        </div>
-      </div>
-    </div>
+    <input
+      ref="checkpointInput"
+      type="file"
+      accept=".nnw,application/octet-stream"
+      hidden
+      @change="loadCheckpoint"
+    />
   </main>
 </template>
-
-<style scoped>
-.game-view {
-  position: relative;
-  width: 100%;
-  height: 100vh;
-  overflow: hidden;
-  background: #111;
-}
-
-.pixi-container {
-  width: 100%;
-  height: 100%;
-}
-
-.game-hud {
-  position: absolute;
-  top: 20px;
-  left: 20px;
-  color: white;
-  pointer-events: none;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-}
-
-.game-hud h1 {
-  margin: 0;
-  font-size: 2rem;
-}
-
-.info {
-  margin-top: 5px;
-  font-size: 0.9rem;
-  opacity: 0.8;
-}
-
-.mt-4 {
-  margin-top: 1rem;
-}
-
-.flex {
-  display: flex;
-}
-
-.gap-2 {
-  gap: 0.5rem;
-}
-
-.controls button {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: white;
-  padding: 4px 12px;
-  cursor: pointer;
-  pointer-events: auto;
-  border-radius: 4px;
-}
-
-.controls button.active {
-  background: #4caf50;
-  border-color: #4caf50;
-}
-
-.checkpoint-controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  pointer-events: auto;
-}
-
-.checkpoint-controls small {
-  max-width: 280px;
-  opacity: 0.75;
-}
-
-.inspection-panel {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  width: 280px;
-  background: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  padding: 20px;
-  color: white;
-  font-family: monospace;
-}
-
-.inspection-panel h3 {
-  margin: 0 0 15px 0;
-  font-size: 1.1rem;
-  color: #4caf50;
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 12px;
-}
-
-.stat-item {
-  display: flex;
-  flex-direction: column;
-}
-
-.stat-item label {
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.5);
-  margin-bottom: 2px;
-}
-
-.stat-item span {
-  font-size: 0.95rem;
-}
-
-.stat-item.full {
-  grid-column: 1 / -1;
-}
-
-.reward {
-  color: #ffeb3b;
-  font-weight: bold;
-}
-
-.warning {
-  color: #ff5252;
-}
-</style>
