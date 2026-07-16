@@ -70,8 +70,10 @@ export function movementSystem(delta: number) {
       }
 
       // Acceleration / Friction
-      if (input.forward !== 0) {
+      if (input.forward > 0) {
         velocity.speed += input.forward * config.acceleration * delta
+      } else if (input.forward < 0) {
+        velocity.speed -= Math.abs(input.forward) * config.deceleration * delta
       } else {
         // Friction
         if (Math.abs(velocity.speed) > config.friction * delta) {
@@ -80,7 +82,7 @@ export function movementSystem(delta: number) {
       }
 
       // Clamp speed
-      velocity.speed = Math.max(-config.maxSpeed / 2, Math.min(config.maxSpeed, velocity.speed))
+      velocity.speed = Math.max(0, Math.min(config.maxSpeed, velocity.speed))
 
       // Update position
       velocity.x = Math.cos(transform.rotation) * velocity.speed

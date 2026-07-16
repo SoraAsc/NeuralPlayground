@@ -140,10 +140,10 @@ onMounted(async () => {
     aiUpdate = aiSystem(track)
 
     // 4. Spawn karts at spawn points
-    const playerKart = await spawnKart(0, 0, 0, 'sport', 'manual')
+    // const playerKart = await spawnKart(0, 0, 0, 'sport', 'manual')
     const botKart = await spawnKart(0, 0, 0, 'compact', 'ai')
-    const botKart2 = await spawnKart(0, 0, 0, 'compact', 'ai')
-    karts.value = [playerKart, botKart, botKart2]
+    // const botKart2 = await spawnKart(0, 0, 0, 'compact', 'ai')
+    karts.value = [botKart]
     spawnKarts(track, karts.value)
 
     // 5. Start the Game Loop

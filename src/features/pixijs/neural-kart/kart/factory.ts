@@ -87,13 +87,15 @@ export async function createKart(
       maxDistance: 200,
       showVisuals: true,
     }),
-  Progress({ currentCheckpoint: 0, laps: 0 }),
+    Progress({ currentCheckpoint: 0, laps: 0 }),
   )
 
   if (source === 'ai' || source === 'manual') {
-    // Inputs: sensors.distances (numRays) + sensors.rearDistances (numRearRays) + speed = 5 + 3 + 1 = 9
+    // Inputs:
+    // velocity (2) + alignment/lateral (2) + checkpoint direction sin/cos (2)
+    // + checkpoint distance (1) + front sensors (5) + rear sensors (3) = 15
     // Outputs: forward + steer = 2
-    const env = await NeuralKartEnvironment.create(9, 2)
+    const env = await NeuralKartEnvironment.create(15, 2)
     entity.add(AI({ env }))
   }
 

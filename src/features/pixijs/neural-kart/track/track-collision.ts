@@ -68,13 +68,14 @@ export const trackCollisionSystem = (track: Track) => {
           velocity.x = 0
           velocity.y = 0
           progress.timeSinceLastCheckpoint = 0
+          progress.timeSinceSpawn = 0
           progress.currentCheckpoint = 0
           progress.distanceToNext = Infinity
 
           // Penalty for AI
           const ai = entity.get(AI)
           if (ai && ai.env) {
-            ai.env.reward -= 10
+            ai.env.reward -= 25
             ai.env.done = true
           }
         }

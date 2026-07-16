@@ -8,7 +8,9 @@ export const Progress = trait({
   currentCheckpoint: 0,
   laps: 0,
   timeSinceLastCheckpoint: 0,
+  timeSinceSpawn: 0,
   distanceToNext: Number.POSITIVE_INFINITY,
+  lastDistanceToNext: Number.POSITIVE_INFINITY,
   lastX: 0,
   lastY: 0,
   stationaryTime: 0,
@@ -19,6 +21,7 @@ export const checkpointSystem = (track: Track) => {
   return (delta: number) => {
     world.query(Transform, Progress).updateEach(([transform, progress], entity) => {
       progress.timeSinceLastCheckpoint += delta
+      progress.timeSinceSpawn += delta
 
       const movedDistance = Math.sqrt(
         (transform.x - progress.lastX) * (transform.x - progress.lastX) +
@@ -36,6 +39,7 @@ export const checkpointSystem = (track: Track) => {
       const cp = track.checkpoints[nextCpIndex]
       if (!cp) return
 
+      progress.lastDistanceToNext = progress.distanceToNext
       const distSq = distanceSq({ x: transform.x, y: transform.y }, { x: cp.x, y: cp.y })
       progress.distanceToNext = Math.sqrt(distSq)
       const threshold = Math.max(12, cp.width * 0.5)
@@ -50,7 +54,10 @@ export const checkpointSystem = (track: Track) => {
         // Reward AI
         const ai = entity.get(AI)
         if (ai && ai.env) {
-          ai.env.reward += 25
+          ai.env.reward += 30
+          if (nextCpIndex === 0) {
+            ai.env.reward += 60
+          }
         }
       }
 
@@ -58,7 +65,7 @@ export const checkpointSystem = (track: Track) => {
       if (progress.timeSinceLastCheckpoint > progress.maxTimePerCheckpoint) {
         const ai = entity.get(AI)
         if (ai && ai.env) {
-          ai.env.reward -= 5
+          ai.env.reward -= 12
           ai.env.done = true
         }
         progress.timeSinceLastCheckpoint = 0
