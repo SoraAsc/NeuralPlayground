@@ -63,12 +63,14 @@ export function createTrackFromNodes(pathNodes: PathNode[], trackWidth: number):
 
   // Start Line
   const startNode = pathNodes[0]
-  const nextNode = pathNodes[1]
-  if (!startNode || !nextNode) {
+  const startTangentPoint = centerLine[1]
+  if (!startNode || !startTangentPoint) {
     throw new Error('Invalid start nodes')
   }
 
-  const startRotation = angleTo(startNode, nextNode)
+  // Follow the actual spline tangent. On highly irregular tracks, the chord
+  // from node 0 to node 1 can point outside the rendered road.
+  const startRotation = angleTo(startNode, startTangentPoint)
   const startLine: StartLine = {
     x: startNode.x,
     y: startNode.y,
@@ -80,23 +82,33 @@ export function createTrackFromNodes(pathNodes: PathNode[], trackWidth: number):
   const spawnPoints: SpawnPoint[] = []
   const spawnRows = 2
   const spawnCols = 2
-  const spawnSpacing = 40
-
-  const startNormal = getNormal(startNode, nextNode)
-  const startDir = { x: Math.cos(startRotation), y: Math.sin(startRotation) }
+  const longitudinalSpacing = Math.min(35, trackWidth * 0.35)
+  const lateralSpacing = Math.min(30, trackWidth * 0.3)
 
   for (let r = 0; r < spawnRows; r++) {
+    const targetDistance = (r + 1) * longitudinalSpacing
+    let distanceBehindStart = 0
+    let spawnIndex = centerLine.length - 1
+
+    while (spawnIndex > 0 && distanceBehindStart < targetDistance) {
+      const point = centerLine[spawnIndex]
+      const previous = centerLine[spawnIndex - 1]
+      if (!point || !previous) break
+      distanceBehindStart += Math.hypot(point.x - previous.x, point.y - previous.y)
+      spawnIndex--
+    }
+
+    const spawnCenter = centerLine[spawnIndex] ?? startNode
+    const spawnNext = centerLine[(spawnIndex + 1) % centerLine.length] ?? startTangentPoint
+    const spawnRotation = angleTo(spawnCenter, spawnNext)
+    const spawnNormal = getNormal(spawnCenter, spawnNext)
+
     for (let c = 0; c < spawnCols; c++) {
+      const lateralOffset = (c - (spawnCols - 1) / 2) * lateralSpacing
       spawnPoints.push({
-        x:
-          startNode.x -
-          startDir.x * (r + 1) * spawnSpacing +
-          startNormal.x * (c - 0.5) * spawnSpacing,
-        y:
-          startNode.y -
-          startDir.y * (r + 1) * spawnSpacing +
-          startNormal.y * (c - 0.5) * spawnSpacing,
-        rotation: startRotation,
+        x: spawnCenter.x + spawnNormal.x * lateralOffset,
+        y: spawnCenter.y + spawnNormal.y * lateralOffset,
+        rotation: spawnRotation,
       })
     }
   }

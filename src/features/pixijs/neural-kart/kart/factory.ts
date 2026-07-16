@@ -37,7 +37,7 @@ export const KART_DEFINITIONS: Record<KartType, KartDefinition> = {
       acceleration: 800,
       deceleration: 400,
       friction: 80,
-      steeringSpeed: 3.5,
+      steeringSpeed: 6,
     },
   },
 }
@@ -92,10 +92,10 @@ export async function createKart(
 
   if (source === 'ai' || source === 'manual') {
     // Inputs:
-    // velocity (2) + alignment/lateral (2) + checkpoint direction sin/cos (2)
-    // + checkpoint distance (1) + front sensors (5) + rear sensors (3) = 15
+    // velocity (2) + kart dynamics (5) + alignment/lateral (2)
+    // + checkpoint direction/distance (3) + front sensors (5) + rear sensors (3) = 20
     // Outputs: forward + steer = 2
-    const env = await NeuralKartEnvironment.create(15, 2)
+    const env = await NeuralKartEnvironment.create(20, 2, 2)
     entity.add(AI({ env }))
   }
 

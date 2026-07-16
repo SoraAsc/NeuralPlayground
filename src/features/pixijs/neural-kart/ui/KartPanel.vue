@@ -16,6 +16,13 @@ const props = defineProps<{
   maxTimeout: number
   reward: number
   checkpointStatus: string
+  episodes: number
+  lastReward: number
+  bestReward: number
+  bestLaps: number
+  rewardHistory: number[]
+  checkpointLimit: number
+  trackType: 'circuit' | 'oval' | 'snake' | 'crazy'
 }>()
 
 const emit = defineEmits<{
@@ -23,10 +30,13 @@ const emit = defineEmits<{
   save: []
   load: []
   clear: []
+  'update:checkpointLimit': [value: number]
+  'update:trackType': [value: 'circuit' | 'oval' | 'snake' | 'crazy']
 }>()
 
 const simulation = computed(() => ({ status: 'training' as const }))
 const statRows = computed<StatRow[]>(() => [
+  { label: 'Episódios', value: props.episodes, format: 'int' },
   { label: 'Controle', value: props.source || 'carregando', format: 'str' },
   { label: 'Velocidade do kart', value: props.kartSpeed, format: 'int' },
   { label: 'Checkpoint', value: props.checkpoint, format: 'int' },
@@ -34,6 +44,9 @@ const statRows = computed<StatRow[]>(() => [
   { label: 'Tempo sem progresso', value: props.timeout, format: 'float' },
   { label: 'Limite por checkpoint', value: props.maxTimeout, format: 'float' },
   { label: 'Recompensa acumulada', value: props.reward, format: 'float' },
+  { label: 'Última recompensa', value: props.lastReward, format: 'float' },
+  { label: 'Melhor recompensa', value: props.bestReward, format: 'float' },
+  { label: 'Maior número de voltas', value: props.bestLaps, format: 'int' },
 ])
 
 const infoSections: InfoSection[] = [
@@ -103,8 +116,8 @@ const infoSections: InfoSection[] = [
   <simulation-panel
     :simulation="simulation"
     :stat-rows="statRows"
-    :reward-history="[]"
-    chart-label="Recompensa do episódio atual"
+    :reward-history="rewardHistory"
+    chart-label="Recompensa por episódio"
     :info-sections="infoSections"
     default-tab="stats"
   >
@@ -128,6 +141,31 @@ const infoSections: InfoSection[] = [
             :log-scale="true"
             @update:model-value="emit('update:speed', $event)"
           />
+          <param-slider
+            label="Limite por checkpoint"
+            description="Segundos antes de reiniciar o episódio"
+            :model-value="checkpointLimit"
+            :min="5"
+            :max="60"
+            :step="1"
+            format="int"
+            @update:model-value="emit('update:checkpointLimit', $event)"
+          />
+          <div class="flex flex-col gap-2">
+            <span class="text-xs text-foreground">Pista</span>
+            <div class="grid grid-cols-2 gap-2">
+              <base-button
+                v-for="type in ['circuit', 'oval', 'snake', 'crazy'] as const"
+                :key="type"
+                size="sm"
+                :variant="trackType === type ? 'primary' : 'outline'"
+                class="capitalize"
+                @click="emit('update:trackType', type)"
+              >
+                {{ type }}
+              </base-button>
+            </div>
+          </div>
         </section>
 
         <section class="flex flex-col gap-3 px-4 py-4">

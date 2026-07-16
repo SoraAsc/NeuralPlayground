@@ -14,6 +14,9 @@ import { NeuralKartEnvironment } from '@/features/pixijs/neural-kart/ai/neural-e
 import { spawnKart } from '@/features/pixijs/neural-kart/kart/kart'
 import {
   CircuitTrackGenerator,
+  CrazyTrackGenerator,
+  OvalTrackGenerator,
+  SnakeTrackGenerator,
   TrackRenderer,
   trackCollisionSystem,
   checkpointSystem,
@@ -25,12 +28,15 @@ import { Progress } from '@/features/pixijs/neural-kart/track/track-checkpoints'
 import KartPanel from '@/features/pixijs/neural-kart/ui/KartPanel.vue'
 import BaseButton from '@/features/experiments/ui/BaseButton.vue'
 import { Camera, Focus, ScanLine } from '@lucide/vue'
+import type { TrackGenerator } from '@/features/pixijs/neural-kart/track'
 
 const gameContainer = ref<HTMLDivElement | null>(null)
 const cameraMode = ref<'full' | 'follow'>('follow')
 const karts = ref<Entity[]>([])
 const selectedKartIndex = ref(0)
 const timeMultiplier = ref(1)
+const trackType = ref<'circuit' | 'oval' | 'snake' | 'crazy'>('circuit')
+const checkpointLimit = ref(20)
 const checkpointStatus = ref('Auto-load: /models/neural-kart.nnw')
 const checkpointInput = ref<HTMLInputElement | null>(null)
 
@@ -43,6 +49,11 @@ const inspection = reactive({
   time: 0,
   maxTime: 10,
   reward: 0,
+  episodes: 0,
+  lastReward: 0,
+  bestReward: 0,
+  bestLaps: 0,
+  rewardHistory: [] as number[],
 })
 
 const activeKart = computed(() => karts.value[selectedKartIndex.value])
@@ -50,7 +61,60 @@ const activeKart = computed(() => karts.value[selectedKartIndex.value])
 let collisionSystem: () => void
 let cpSystem: (delta: number) => void
 let aiUpdate: () => void
+let trackRenderer: TrackRenderer
 const sensors = ref<(() => void) | null>(null)
+
+const trackGenerators: Record<typeof trackType.value, () => TrackGenerator> = {
+  circuit: () => new CircuitTrackGenerator(),
+  oval: () => new OvalTrackGenerator(),
+  snake: () => new SnakeTrackGenerator(),
+  crazy: () => new CrazyTrackGenerator(),
+}
+
+function configureTrack() {
+  const track = trackGenerators[trackType.value]().generate(Math.random() * 1000)
+  trackRenderer.render(track)
+  collisionSystem = trackCollisionSystem(track)
+  cpSystem = checkpointSystem(track)
+  sensors.value = sensorSystem(track)
+  aiUpdate = aiSystem(track)
+  spawnKarts(track, karts.value)
+  for (const kart of karts.value) {
+    const progress = kart.get(Progress)
+    const velocity = kart.get(Velocity)
+    const ai = kart.get(AI)
+    if (progress) {
+      progress.currentCheckpoint = 0
+      progress.laps = 0
+      progress.timeSinceLastCheckpoint = 0
+      progress.timeSinceSpawn = 0
+      progress.stationaryTime = 0
+      progress.distanceToNext = Number.POSITIVE_INFINITY
+      progress.lastDistanceToNext = Number.POSITIVE_INFINITY
+      progress.maxTimePerCheckpoint = checkpointLimit.value
+    }
+    if (velocity) {
+      velocity.x = 0
+      velocity.y = 0
+      velocity.speed = 0
+    }
+    ai?.env?.reset()
+  }
+  return track
+}
+
+function changeTrack(type: typeof trackType.value) {
+  trackType.value = type
+  configureTrack()
+}
+
+function setCheckpointLimit(value: number) {
+  checkpointLimit.value = Math.round(value)
+  for (const kart of karts.value) {
+    const progress = kart.get(Progress)
+    if (progress) progress.maxTimePerCheckpoint = checkpointLimit.value
+  }
+}
 
 function toggleCamera() {
   cameraMode.value = cameraMode.value === 'full' ? 'follow' : 'full'
@@ -144,6 +208,11 @@ function updateGameSystems(delta: number) {
     inspection.time = prog?.timeSinceLastCheckpoint ?? 0
     inspection.maxTime = prog?.maxTimePerCheckpoint ?? 10
     inspection.reward = ai?.env?.totalReward ?? 0
+    inspection.episodes = ai?.env?.episodes ?? 0
+    inspection.lastReward = ai?.env?.lastEpisodeReward ?? 0
+    inspection.bestReward = Number.isFinite(ai?.env?.bestReward) ? (ai?.env?.bestReward ?? 0) : 0
+    inspection.bestLaps = ai?.env?.bestLaps ?? 0
+    inspection.rewardHistory = ai?.env?.rewardHistory ?? []
   }
 
   // Camera Logic
@@ -174,25 +243,15 @@ onMounted(async () => {
     await initPixi(gameContainer.value)
 
     // 1. Generate Track
-    const generator = new CircuitTrackGenerator()
-    const track = generator.generate(Math.random() * 1000)
-
-    // 2. Render Track
-    const renderer = new TrackRenderer(pixiApp.stage)
-    renderer.render(track)
+    trackRenderer = new TrackRenderer(pixiApp.stage)
 
     // 3. Setup Systems
-    collisionSystem = trackCollisionSystem(track)
-    cpSystem = checkpointSystem(track)
-    sensors.value = sensorSystem(track)
-    aiUpdate = aiSystem(track)
-
-    // 4. Spawn karts at spawn points
+    // 3. Spawn karts
     // const playerKart = await spawnKart(0, 0, 0, 'sport', 'manual')
     const botKart = await spawnKart(0, 0, 0, 'compact', 'ai')
     const botKart2 = await spawnKart(0, 0, 0, 'sport', 'ai')
     karts.value = [botKart, botKart2]
-    spawnKarts(track, karts.value)
+    configureTrack()
 
     // 5. Start the Game Loop
     startGameLoop(updateGameSystems)
@@ -275,8 +334,17 @@ onUnmounted(() => {
       :timeout="inspection.time"
       :max-timeout="inspection.maxTime"
       :reward="inspection.reward"
+      :episodes="inspection.episodes"
+      :last-reward="inspection.lastReward"
+      :best-reward="inspection.bestReward"
+      :best-laps="inspection.bestLaps"
+      :reward-history="inspection.rewardHistory"
+      :checkpoint-limit="checkpointLimit"
+      :track-type="trackType"
       :checkpoint-status="checkpointStatus"
       @update:speed="timeMultiplier = Math.max(1, Math.round($event))"
+      @update:checkpoint-limit="setCheckpointLimit"
+      @update:track-type="changeTrack"
       @save="saveCheckpoint"
       @load="chooseCheckpoint"
       @clear="clearCheckpoint"

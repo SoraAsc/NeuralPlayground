@@ -3,6 +3,7 @@ import { Transform, Input, AISensors, Velocity, KartConfig, AI } from '../kart/t
 import type { Track } from '../track/track-types'
 import { Progress } from '../track/track-checkpoints'
 import { cross, dot, findNearestPoint, normalize } from '@/shared/pixijs/common-math'
+import { NeuralKartEnvironment, type NeuralKartBatchStep } from './neural-env'
 
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value))
@@ -72,9 +73,10 @@ function frameTrackForward(transform: { x: number; y: number; rotation: number }
 
 export const aiSystem = (track: Track) => {
   return () => {
+    const batch: NeuralKartBatchStep[] = []
     world
-      .query(Input, AISensors, Velocity, KartConfig, AI, Transform, Progress)
-      .updateEach(([input, sensors, velocity, config, ai, transform, progress]) => {
+      .query(AISensors, Velocity, KartConfig, AI, Transform, Progress)
+      .updateEach(([sensors, velocity, config, ai, transform, progress]) => {
         if (!ai.env) return
 
         let frameReward = 0
@@ -113,6 +115,11 @@ export const aiSystem = (track: Track) => {
         const features = [
           velocity.x / Math.max(1, config.maxSpeed),
           velocity.y / Math.max(1, config.maxSpeed),
+          config.maxSpeed / 600,
+          config.acceleration / 800,
+          config.deceleration / 400,
+          config.friction / 100,
+          config.steeringSpeed / 6,
           (() => getTrackSignal(transform, velocity, track)?.alignment ?? 0)(),
           (() => getTrackSignal(transform, velocity, track)?.lateral ?? 0)(),
           (() => {
@@ -146,12 +153,24 @@ export const aiSystem = (track: Track) => {
           ...sensors.rearDistances.map((d) => d / sensors.maxDistance),
         ]
 
-        const action = ai.env.step(features, frameReward, ai.env.done)
-        ai.env.reward = 0
+        batch.push({
+          env: ai.env,
+          inputs: ai.env.done ? Array.from({ length: 20 }, () => 0) : features,
+          reward: frameReward,
+          done: ai.env.done,
+        })
+      })
 
-        // 3. Handle Reset AFTER processing the terminal reward
+    NeuralKartEnvironment.stepBatch(batch)
+
+    world
+      .query(Input, Velocity, AI, Transform, Progress)
+      .updateEach(([input, velocity, ai, transform, progress]) => {
+        if (!ai.env) return
+
         if (ai.env.done) {
-          const spawn = track.spawnPoints[0]
+          ai.env.completeEpisode(progress.laps)
+          const spawn = track.spawnPoints[ai.env.envIndex % track.spawnPoints.length]
           if (spawn) {
             transform.x = spawn.x
             transform.y = spawn.y
@@ -160,19 +179,20 @@ export const aiSystem = (track: Track) => {
             velocity.x = 0
             velocity.y = 0
           }
-          ai.env.reset()
+          ai.env.resetEpisode()
           progress.timeSinceLastCheckpoint = 0
           progress.currentCheckpoint = 0
+          progress.laps = 0
+          progress.timeSinceSpawn = 0
+          progress.stationaryTime = 0
           progress.distanceToNext = Number.POSITIVE_INFINITY
           progress.lastDistanceToNext = Number.POSITIVE_INFINITY
-          return
         }
 
-        // 4. Update Inputs from PPO Action
-        if (input.source === 'ai' && action) {
-          const forward = Math.max(-1, Math.min(1, action[0] ?? 0))
+        if (input.source === 'ai') {
+          const forward = Math.max(-1, Math.min(1, ai.env.outputs[0] ?? 0))
           input.forward = forward
-          input.steer = Math.max(-1, Math.min(1, action[1] ?? 0))
+          input.steer = Math.max(-1, Math.min(1, ai.env.outputs[1] ?? 0))
         }
       })
   }

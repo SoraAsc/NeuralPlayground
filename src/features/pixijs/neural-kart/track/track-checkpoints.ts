@@ -14,7 +14,7 @@ export const Progress = trait({
   lastX: 0,
   lastY: 0,
   stationaryTime: 0,
-  maxTimePerCheckpoint: 80, // 10 seconds to reach next CP
+  maxTimePerCheckpoint: 20,
 })
 
 export const checkpointSystem = (track: Track) => {
@@ -27,7 +27,7 @@ export const checkpointSystem = (track: Track) => {
         (transform.x - progress.lastX) * (transform.x - progress.lastX) +
           (transform.y - progress.lastY) * (transform.y - progress.lastY),
       )
-      if (movedDistance < 1.5) {
+      if (movedDistance < 5 * delta) {
         progress.stationaryTime += delta
       } else {
         progress.stationaryTime = 0
@@ -61,8 +61,14 @@ export const checkpointSystem = (track: Track) => {
         }
       }
 
-      // Handle Timeout
-      if (progress.timeSinceLastCheckpoint > progress.maxTimePerCheckpoint) {
+      if (progress.stationaryTime > 4) {
+        const ai = entity.get(AI)
+        if (ai && ai.env) {
+          ai.env.reward -= 8
+          ai.env.done = true
+        }
+        progress.stationaryTime = 0
+      } else if (progress.timeSinceLastCheckpoint > progress.maxTimePerCheckpoint) {
         const ai = entity.get(AI)
         if (ai && ai.env) {
           ai.env.reward -= 12
