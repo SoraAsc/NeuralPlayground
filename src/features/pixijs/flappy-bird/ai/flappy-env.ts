@@ -2,7 +2,7 @@ import { createNNW, type NeuralNetwork, type PPOAgent } from 'nnw'
 
 const CHECKPOINT_URL = '/models/flappy-bird.nnw'
 const NUM_ENVS = 12
-const STATE_SIZE = 5
+const STATE_SIZE = 6
 const ROLLOUT_STEPS = 128
 const DT = 0.02
 const WIDTH = 800
@@ -13,6 +13,8 @@ const PIPE_GAP = 155
 const PIPE_SPEED = 135
 const GRAVITY = 1050
 const FLAP_VELOCITY = -360
+const MIN_GAP_Y = PIPE_GAP / 2 + 35
+const MAX_GAP_Y = HEIGHT - MIN_GAP_Y
 
 type BirdEnvironment = {
   y: number
@@ -27,6 +29,7 @@ export type FlappyPipe = {
   x: number
   gapY: number
   passed: boolean
+  verticalDirection: -1 | 1
 }
 
 export type FlappySnapshot = BirdEnvironment & {
@@ -34,7 +37,7 @@ export type FlappySnapshot = BirdEnvironment & {
   opacity: number
 }
 
-const randomGap = () => 105 + Math.random() * (HEIGHT - 210)
+const randomGap = () => MIN_GAP_Y + Math.random() * (MAX_GAP_Y - MIN_GAP_Y)
 const randomSpacing = () => 250 + Math.random() * 180
 
 export class FlappyPPOEnvironment {
@@ -51,6 +54,8 @@ export class FlappyPPOEnvironment {
   lastReward = 0
   rewardHistory: number[] = []
   autoLoadedCheckpoint = false
+  movingPipes = false
+  pipeVerticalSpeed = 20
 
   async init() {
     this.nnw = await createNNW()
@@ -114,6 +119,11 @@ export class FlappyPPOEnvironment {
     }))
   }
 
+  setPipeMotion(enabled: boolean, speed: number) {
+    this.movingPipes = enabled
+    this.pipeVerticalSpeed = Math.max(5, Math.min(45, speed))
+  }
+
   leader() {
     return this.snapshots().reduce((best, bird) =>
       bird.episodeReward > best.episodeReward ||
@@ -164,7 +174,12 @@ export class FlappyPPOEnvironment {
     const pipes: FlappyPipe[] = []
     let pipeX = firstPipeX
     for (let i = 0; i < 4; i++) {
-      pipes.push({ x: pipeX, gapY: randomGap(), passed: false })
+      pipes.push({
+        x: pipeX,
+        gapY: randomGap(),
+        passed: false,
+        verticalDirection: Math.random() < 0.5 ? -1 : 1,
+      })
       pipeX += randomSpacing()
     }
     return {
@@ -189,6 +204,7 @@ export class FlappyPPOEnvironment {
       Math.max(-1, Math.min(1, (nextPipe.x - BIRD_X) / WIDTH)),
       (nextPipe.gapY / HEIGHT) * 2 - 1,
       Math.max(-1, Math.min(1, (nextPipe.gapY - env.y) / HEIGHT)),
+      this.movingPipes ? (nextPipe.verticalDirection * this.pipeVerticalSpeed) / 45 : 0,
     ]
   }
 
@@ -196,7 +212,16 @@ export class FlappyPPOEnvironment {
     if (action === 1) env.velocity = FLAP_VELOCITY
     env.velocity += GRAVITY * DT
     env.y += env.velocity * DT
-    for (const pipe of env.pipes) pipe.x -= PIPE_SPEED * DT
+    for (const pipe of env.pipes) {
+      pipe.x -= PIPE_SPEED * DT
+      if (this.movingPipes) {
+        pipe.gapY += pipe.verticalDirection * this.pipeVerticalSpeed * DT
+        if (pipe.gapY <= MIN_GAP_Y || pipe.gapY >= MAX_GAP_Y) {
+          pipe.gapY = Math.max(MIN_GAP_Y, Math.min(MAX_GAP_Y, pipe.gapY))
+          pipe.verticalDirection = pipe.verticalDirection === 1 ? -1 : 1
+        }
+      }
+    }
     env.survival += DT
 
     let reward = 0.01
@@ -212,7 +237,12 @@ export class FlappyPPOEnvironment {
     if (firstPipe && firstPipe.x + PIPE_WIDTH < 0) {
       env.pipes.shift()
       const lastX = env.pipes.at(-1)?.x ?? WIDTH
-      env.pipes.push({ x: lastX + randomSpacing(), gapY: randomGap(), passed: false })
+      env.pipes.push({
+        x: lastX + randomSpacing(),
+        gapY: randomGap(),
+        passed: false,
+        verticalDirection: Math.random() < 0.5 ? -1 : 1,
+      })
     }
 
     const hitPipe = env.pipes.some((pipe) => {

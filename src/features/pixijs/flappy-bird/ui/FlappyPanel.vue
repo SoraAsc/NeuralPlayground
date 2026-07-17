@@ -18,6 +18,8 @@ const props = defineProps<{
   speed: number
   checkpointStatus: string
   viewLabel: string
+  movingPipes: boolean
+  pipeVerticalSpeed: number
 }>()
 
 const emit = defineEmits<{
@@ -25,6 +27,8 @@ const emit = defineEmits<{
   save: []
   load: []
   reset: []
+  'update:movingPipes': [value: boolean]
+  'update:pipeVerticalSpeed': [value: number]
 }>()
 
 const simulation = computed(() => ({ status: 'training' as const }))
@@ -58,6 +62,7 @@ const infoSections: InfoSection[] = [
           'Altura e velocidade vertical do pássaro',
           'Distância horizontal até o próximo cano',
           'Centro do vão e distância vertical até ele',
+          'Velocidade vertical do vão quando os canos estão em movimento',
           'Ação discreta: aguardar ou bater as asas',
         ],
       },
@@ -103,6 +108,39 @@ const infoSections: InfoSection[] = [
             format="int"
             :log-scale="true"
             @update:model-value="emit('update:speed', $event)"
+          />
+          <div class="flex flex-col gap-2">
+            <div class="flex items-baseline justify-between gap-2">
+              <span class="text-xs text-foreground">Movimento dos canos</span>
+              <span class="text-[10px] text-muted-foreground/50">opcional</span>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <base-button
+                size="sm"
+                :variant="!movingPipes ? 'primary' : 'outline'"
+                @click="emit('update:movingPipes', false)"
+              >
+                Parados
+              </base-button>
+              <base-button
+                size="sm"
+                :variant="movingPipes ? 'primary' : 'outline'"
+                @click="emit('update:movingPipes', true)"
+              >
+                Subindo/descendo
+              </base-button>
+            </div>
+          </div>
+          <param-slider
+            v-if="movingPipes"
+            label="Velocidade vertical"
+            description="Unidades por segundo; limitado a uma faixa atravessável"
+            :model-value="pipeVerticalSpeed"
+            :min="5"
+            :max="45"
+            :step="1"
+            format="int"
+            @update:model-value="emit('update:pipeVerticalSpeed', $event)"
           />
         </section>
         <section class="flex flex-col gap-3 px-4 py-4">

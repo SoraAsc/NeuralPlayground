@@ -13,6 +13,8 @@ const checkpointInput = ref<HTMLInputElement | null>(null)
 const ready = ref(false)
 const paused = ref(false)
 const speed = ref(1)
+const movingPipes = ref(false)
+const pipeVerticalSpeed = ref(20)
 const viewMode = ref<'all' | 'best' | number>('all')
 const checkpointStatus = ref('Auto-load: /models/flappy-bird.nnw')
 const metrics = reactive({
@@ -53,6 +55,12 @@ function focusedBird() {
   const snapshots = env.snapshots()
   if (viewMode.value === 'all' || viewMode.value === 'best') return env.leader()
   return snapshots.find((bird) => bird.index === viewMode.value) ?? env.leader()
+}
+
+function updatePipeMotion(enabled = movingPipes.value, verticalSpeed = pipeVerticalSpeed.value) {
+  movingPipes.value = enabled
+  pipeVerticalSpeed.value = Math.max(5, Math.min(45, Math.round(verticalSpeed)))
+  env.setPipeMotion(movingPipes.value, pipeVerticalSpeed.value)
 }
 
 function syncMetrics() {
@@ -280,6 +288,7 @@ onUnmounted(() => {
           <span>{{ viewLabel }} · {{ metrics.score }} canos</span>
           <span>reward {{ metrics.reward.toFixed(2) }}</span>
           <span>{{ metrics.survival.toFixed(1) }}s</span>
+          <span v-if="movingPipes">canos {{ pipeVerticalSpeed }} u/s</span>
         </div>
       </div>
     </div>
@@ -296,10 +305,14 @@ onUnmounted(() => {
       :speed="speed"
       :checkpoint-status="checkpointStatus"
       :view-label="viewLabel"
+      :moving-pipes="movingPipes"
+      :pipe-vertical-speed="pipeVerticalSpeed"
       @update:speed="speed = Math.max(1, Math.round($event))"
       @save="saveCheckpoint"
       @load="chooseCheckpoint"
       @reset="resetLearning"
+      @update:moving-pipes="updatePipeMotion($event)"
+      @update:pipe-vertical-speed="updatePipeMotion(movingPipes, $event)"
     />
     <input
       ref="checkpointInput"
