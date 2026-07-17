@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Cpu, Database } from '@lucide/vue'
+import { Cpu, Database, RotateCcw } from '@lucide/vue'
 import BaseButton from '@/features/experiments/ui/BaseButton.vue'
 import ParamSlider from '@/features/game/ui/ParamSlider.vue'
 import SimulationPanel from '@/features/unity/ui/SimulationPanel.vue'
@@ -179,7 +179,7 @@ const infoSections: InfoSection[] = [
             <base-button size="sm" @click="emit('save')">Salvar IA</base-button>
             <base-button size="sm" @click="emit('load')">Carregar IA</base-button>
             <base-button class="col-span-2" size="sm" variant="danger" @click="emit('clear')">
-              Reiniciar aprendizado
+              <rotate-ccw /> Reiniciar aprendizado
             </base-button>
           </div>
           <p class="text-[10px] leading-relaxed text-muted-foreground/60">

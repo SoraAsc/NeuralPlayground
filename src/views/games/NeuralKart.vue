@@ -173,7 +173,7 @@ async function clearCheckpoint() {
     await NeuralKartEnvironment.resetSharedFromScratch()
     checkpointStatus.value = 'IA reinicializada do zero'
   } catch (error) {
-    checkpointStatus.value = error instanceof Error ? error.message : 'Falha ao limpar IA'
+    checkpointStatus.value = error instanceof Error ? error.message : 'Falha ao reiniciar IA'
   }
 }
 
@@ -252,6 +252,9 @@ onMounted(async () => {
     const botKart2 = await spawnKart(0, 0, 0, 'sport', 'ai')
     karts.value = [botKart, botKart2]
     configureTrack()
+    checkpointStatus.value = (await NeuralKartEnvironment.wasPublishedCheckpointLoaded())
+      ? 'Modelo publicado carregado automaticamente'
+      : 'Nenhum modelo publicado encontrado; treinando do zero'
 
     // 5. Start the Game Loop
     startGameLoop(updateGameSystems)

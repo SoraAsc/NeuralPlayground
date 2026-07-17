@@ -40,6 +40,7 @@ class SharedAgent {
   agent!: PPOAgent
   activeEnvs = 0
   version = 0
+  publishedCheckpointLoaded = false
   private stepsSinceTrain = 0
   settings: PPOSettings = { ...DEFAULT_PPO_SETTINGS }
 
@@ -109,6 +110,7 @@ class SharedAgent {
       const response = await fetch(CHECKPOINT_URL, { cache: 'no-store' })
       if (!response.ok) return
       this.nnw.loadCheckpoint(await response.arrayBuffer(), this.models())
+      this.publishedCheckpointLoaded = true
       console.info(`Neural Kart: checkpoint carregado de ${CHECKPOINT_URL}`)
     } catch (error) {
       console.warn('Neural Kart: não foi possível carregar o checkpoint publicado', error)
@@ -252,6 +254,11 @@ export class NeuralKartEnvironment {
     shared.resetFromScratch()
   }
 
+  static async wasPublishedCheckpointLoaded() {
+    const shared = await SharedAgent['promise']
+    return shared?.publishedCheckpointLoaded ?? false
+  }
+
   static async updateSharedSettings(settings: Partial<PPOSettings>) {
     const shared = await SharedAgent['promise']
     if (!shared) throw new Error('Agente Neural Kart ainda não foi inicializado')
@@ -299,6 +306,7 @@ export class NeuralKartEnvironment {
       this.lastReward = 0
       this.totalReward = 0
       this.outputs.fill(0)
+      this.resetStatistics()
     }
 
     this.inputs = inputs.slice(0, this.inputSize)
@@ -324,6 +332,14 @@ export class NeuralKartEnvironment {
     this.lastReward = 0
     this.totalReward = 0
     this.done = false
+  }
+
+  private resetStatistics() {
+    this.episodes = 0
+    this.lastEpisodeReward = 0
+    this.bestReward = Number.NEGATIVE_INFINITY
+    this.bestLaps = 0
+    this.rewardHistory = []
   }
 
   isDone(): boolean {
