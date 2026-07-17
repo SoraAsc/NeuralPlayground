@@ -15,9 +15,16 @@ let sensorGraphics: Graphics | null = null
 function getSensorGraphics(): Graphics {
   if (!sensorGraphics) {
     sensorGraphics = new Graphics()
+  }
+  if (!sensorGraphics.parent) {
     pixiApp.stage.addChild(sensorGraphics)
   }
   return sensorGraphics
+}
+
+export function releaseKartRendering() {
+  sensorGraphics?.destroy()
+  sensorGraphics = null
 }
 
 window.addEventListener('keydown', (e) => {

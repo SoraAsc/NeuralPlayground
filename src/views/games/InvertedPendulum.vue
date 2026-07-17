@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { Application, Graphics } from 'pixi.js'
+import { Graphics, type Ticker } from 'pixi.js'
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { Pause, Play, RotateCcw } from '@lucide/vue'
 import BaseButton from '@/features/experiments/ui/BaseButton.vue'
 import PendulumPanel from '@/features/pixijs/inverted-pendulum/ui/PendulumPanel.vue'
 import { PendulumEnvironment } from '@/features/pixijs/inverted-pendulum/ai/pendulum-env'
 import { useTheme } from '@/shared/lib/theme/useTheme'
+import { initPixi, pixiApp, releasePixi } from '@/shared/pixijs/pixi-app'
 
 const container = ref<HTMLDivElement | null>(null)
 const ready = ref(false)
@@ -30,8 +31,8 @@ const metrics = reactive({
 
 const { theme } = useTheme()
 const env = new PendulumEnvironment()
-let app: Application | null = null
 let graphics: Graphics | null = null
+let tick: ((ticker: Ticker) => void) | null = null
 
 const palette = computed(() =>
   theme.value === 'dark'
@@ -54,12 +55,12 @@ function syncMetrics() {
 }
 
 function renderScene() {
-  if (!app || !graphics) return
-  const { width, height } = app.screen
+  if (!graphics) return
+  const { width, height } = pixiApp.screen
   const colors = palette.value
   const g = graphics
   g.clear()
-  app.renderer.background.color = colors.background
+  pixiApp.renderer.background.color = colors.background
 
   const grid = Math.max(28, Math.min(width, height) / 14)
   for (let x = width / 2; x < width; x += grid) {
@@ -175,39 +176,35 @@ async function loadCheckpoint(event: Event) {
 
 onMounted(async () => {
   if (!container.value) return
-  app = new Application()
-  await app.init({
-    resizeTo: container.value,
-    backgroundColor: palette.value.background,
-    antialias: true,
-    resolution: window.devicePixelRatio || 1,
-    autoDensity: true,
-  })
-  container.value.appendChild(app.canvas)
+  await initPixi(container.value)
+  pixiApp.renderer.background.color = palette.value.background
   graphics = new Graphics()
-  app.stage.addChild(graphics)
+  pixiApp.stage.addChild(graphics)
   await env.init()
   checkpointStatus.value = env.autoLoadedCheckpoint
     ? 'Modelo publicado carregado automaticamente'
     : 'Nenhum modelo publicado encontrado; treinando do zero'
   ready.value = true
 
-  app.ticker.add(() => {
+  tick = () => {
     if (!paused.value) {
       for (let i = 0; i < Math.round(speed.value); i++) env.tick()
       syncMetrics()
     }
     renderScene()
-  })
+  }
+  pixiApp.ticker.add(tick)
 })
 
 watch(theme, renderScene)
 
 onUnmounted(() => {
+  if (tick) pixiApp.ticker.remove(tick)
+  tick = null
   env.dispose()
-  app?.destroy(true, { children: true, texture: true })
-  app = null
+  graphics?.destroy()
   graphics = null
+  releasePixi()
 })
 </script>
 
@@ -218,12 +215,10 @@ onUnmounted(() => {
         <base-button variant="primary" size="dot" show-dot :active="ready && !paused">
           PPO · Pêndulo 01
         </base-button>
-        <span class="ml-auto text-[10px] text-muted-foreground/60">
-          CartPole-v1 · força contínua
-        </span>
+        <span class="ml-auto text-[10px] text-muted-foreground/60"> CartPole-v1 </span>
       </div>
 
-      <div class="relative h-[60vh] min-h-[420px] overflow-hidden bg-background">
+      <div class="relative h-[60vh] min-h-105 overflow-hidden bg-background">
         <div ref="container" class="h-full w-full" />
 
         <div

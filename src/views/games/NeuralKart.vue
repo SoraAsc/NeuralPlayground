@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, computed, reactive } from 'vue'
 import type { Entity } from 'koota'
-import { initPixi, pixiApp } from '@/shared/pixijs/pixi-app'
+import { initPixi, pixiApp, releasePixi } from '@/shared/pixijs/pixi-app'
 import { startGameLoop } from '@/shared/ecs/timer'
 import {
   inputSystem,
   movementSystem,
   renderSystem,
   cleanupSystem,
+  releaseKartRendering,
 } from '@/features/pixijs/neural-kart/kart/systems'
 import { aiSystem } from '@/features/pixijs/neural-kart/ai/system'
 import { NeuralKartEnvironment } from '@/features/pixijs/neural-kart/ai/neural-env'
@@ -23,7 +24,7 @@ import {
   spawnKarts,
   sensorSystem,
 } from '@/features/pixijs/neural-kart/track'
-import { Transform, AI, Velocity, Input } from '@/features/pixijs/neural-kart/kart/traits'
+import { Transform, AI, Velocity, Input, Sprite } from '@/features/pixijs/neural-kart/kart/traits'
 import { Progress } from '@/features/pixijs/neural-kart/track/track-checkpoints'
 import KartPanel from '@/features/pixijs/neural-kart/ui/KartPanel.vue'
 import BaseButton from '@/features/experiments/ui/BaseButton.vue'
@@ -62,6 +63,7 @@ let collisionSystem: () => void
 let cpSystem: (delta: number) => void
 let aiUpdate: () => void
 let trackRenderer: TrackRenderer
+let stopGameLoop: (() => void) | null = null
 const sensors = ref<(() => void) | null>(null)
 
 const trackGenerators: Record<typeof trackType.value, () => TrackGenerator> = {
@@ -257,7 +259,7 @@ onMounted(async () => {
       : 'Nenhum modelo publicado encontrado; treinando do zero'
 
     // 5. Start the Game Loop
-    startGameLoop(updateGameSystems)
+    stopGameLoop = startGameLoop(updateGameSystems)
 
     console.log('Game Started!')
   }
@@ -265,8 +267,18 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeyDown)
+  stopGameLoop?.()
+  stopGameLoop = null
+  for (const kart of karts.value) {
+    kart.get(AI)?.env?.dispose()
+    kart.get(Sprite)?.view?.destroy({ children: true })
+    kart.destroy()
+  }
+  karts.value = []
+  trackRenderer?.destroy()
+  releaseKartRendering()
   NeuralKartEnvironment.disposeShared()
-  pixiApp.destroy(true, { children: true, texture: true })
+  releasePixi()
 })
 </script>
 
