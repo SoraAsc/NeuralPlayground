@@ -8,6 +8,7 @@ const experiments = [
     actionSpace: 'Discreto',
     engine: 'Unity',
     title: 'Neural Snake',
+    repositoryUrl: 'https://github.com/SoraAsc/NeuralSnake',
     preview: 'snake' as const,
     description:
       'Múltiplas serpentes aprendem a buscar alimento e evitar colisões em simulações aceleradas.',
@@ -18,6 +19,8 @@ const experiments = [
     actionSpace: 'Contínuo',
     engine: 'PixiJS',
     title: 'Neural Kart',
+    repositoryUrl:
+      'https://github.com/SoraAsc/NeuralPlayground/tree/main/src/features/pixijs/neural-kart',
     preview: 'kart' as const,
     description:
       'Pilotos compartilham uma política e aprendem a percorrer pistas procedurais usando sensores de distância.',
@@ -28,6 +31,8 @@ const experiments = [
     actionSpace: 'Contínuo',
     engine: 'PixiJS',
     title: 'Inverted Pendulum',
+    repositoryUrl:
+      'https://github.com/SoraAsc/NeuralPlayground/tree/main/src/features/pixijs/inverted-pendulum',
     preview: 'pendulum' as const,
     description:
       'Uma política controla a força horizontal da base para equilibrar um pêndulo invertido.',
@@ -38,6 +43,8 @@ const experiments = [
     actionSpace: 'Discreto',
     engine: 'PixiJS',
     title: 'Neural Flappy',
+    repositoryUrl:
+      'https://github.com/SoraAsc/NeuralPlayground/tree/main/src/features/pixijs/flappy-bird',
     preview: 'flappy' as const,
     description:
       'Doze ambientes vetorizados treinam uma única política para atravessar sequências de obstáculos.',
@@ -48,6 +55,8 @@ const experiments = [
     actionSpace: 'Discreto',
     engine: 'PixiJS',
     title: 'Neural Pong',
+    repositoryUrl:
+      'https://github.com/SoraAsc/NeuralPlayground/tree/main/src/features/pixijs/neural-pong',
     preview: 'pong' as const,
     description:
       'Duas raquetes treinam em self-play simétrico compartilhando uma Q-table discretizada.',
@@ -58,6 +67,8 @@ const experiments = [
     actionSpace: 'Multidiscreto',
     engine: 'PixiJS',
     title: 'Asteroids',
+    repositoryUrl:
+      'https://github.com/SoraAsc/NeuralPlayground/tree/main/src/features/pixijs/asteroids',
     preview: 'asteroids' as const,
     description:
       'Naves aprendem a prever ameaças, navegar e destruir ondas de asteroides em paralelo.',
