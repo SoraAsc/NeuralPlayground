@@ -78,8 +78,8 @@ export class FlappyPPOEnvironment {
   tick() {
     const states = this.envs.flatMap((env) => this.getState(env))
     const { actions, logProbs, values } = this.agent.collectStep(states, NUM_ENVS)
-    const rewards = new Array<number>(NUM_ENVS)
-    const dones = new Array<number>(NUM_ENVS)
+    const rewards = Array.from({ length: NUM_ENVS }, () => 0)
+    const dones = Array.from({ length: NUM_ENVS }, () => 0)
 
     this.envs.forEach((env, index) => {
       const action = Math.round(actions[index] ?? 0)
