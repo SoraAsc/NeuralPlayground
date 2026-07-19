@@ -2,6 +2,7 @@ import NeuralKart from '@/views/games/NeuralKart.vue'
 import NeuralSnake from '@/views/games/NeuralSnake.vue'
 import InvertedPendulum from '@/views/games/InvertedPendulum.vue'
 import NeuralFlappy from '@/views/games/NeuralFlappy.vue'
+import Asteroids from '@/views/games/Asteroids.vue'
 import HomeView from '@/views/HomeView.vue'
 import { createRouter, createWebHistory } from 'vue-router'
 
@@ -32,6 +33,11 @@ const router = createRouter({
       path: '/game/neural-flappy',
       name: 'Neural Flappy',
       component: NeuralFlappy,
+    },
+    {
+      path: '/game/asteroids',
+      name: 'Asteroids',
+      component: Asteroids,
     },
   ],
 })
