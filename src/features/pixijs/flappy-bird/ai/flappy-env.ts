@@ -53,6 +53,7 @@ export class FlappyPPOEnvironment {
   bestScore = 0
   lastReward = 0
   rewardHistory: number[] = []
+  scoreHistory: number[] = []
   autoLoadedCheckpoint = false
   movingPipes = false
   pipeVerticalSpeed = 20
@@ -267,6 +268,8 @@ export class FlappyPPOEnvironment {
     this.bestScore = Math.max(this.bestScore, env.score)
     this.rewardHistory.push(env.episodeReward)
     if (this.rewardHistory.length > 200) this.rewardHistory.shift()
+    this.scoreHistory.push(env.score)
+    if (this.scoreHistory.length > 200) this.scoreHistory.shift()
   }
 
   private resetSession() {
@@ -276,6 +279,7 @@ export class FlappyPPOEnvironment {
     this.bestReward = Number.NEGATIVE_INFINITY
     this.bestScore = 0
     this.rewardHistory = []
+    this.scoreHistory = []
     this.envs = Array.from({ length: NUM_ENVS }, (_, index) => this.createEnvironment(index))
   }
 

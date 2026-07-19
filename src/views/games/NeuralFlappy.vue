@@ -7,6 +7,7 @@ import FlappyPanel from '@/features/pixijs/flappy-bird/ui/FlappyPanel.vue'
 import { FLAPPY_WORLD, FlappyPPOEnvironment } from '@/features/pixijs/flappy-bird/ai/flappy-env'
 import { useTheme } from '@/shared/lib/theme/useTheme'
 import { initPixi, pixiApp, releasePixi } from '@/shared/pixijs/pixi-app'
+import type { TrainingMetrics } from '@/features/game/model/training-metrics'
 
 const container = ref<HTMLDivElement | null>(null)
 const checkpointInput = ref<HTMLInputElement | null>(null)
@@ -24,7 +25,7 @@ const metrics = reactive({
   score: 0,
   bestScore: 0,
   survival: 0,
-  rewardHistory: [] as number[],
+  scoreHistory: [] as number[],
 })
 
 const { theme } = useTheme()
@@ -42,6 +43,15 @@ const birdColors = [
   0xff5d73, 0xffa552, 0xffd166, 0x8bd450, 0x4dd6b8, 0x4cc9f0, 0x4895ef, 0x6c63ff, 0x9b5de5,
   0xd65db1, 0xf15bb5, 0xff7aa2,
 ]
+
+const trainingMetrics = computed<TrainingMetrics>(() => ({
+  episodes: metrics.episodes,
+  currentResult: metrics.score,
+  bestResult: metrics.bestScore,
+  history: metrics.scoreHistory,
+  mode: paused.value ? 'paused' : 'training',
+  stepsPerFrame: speed.value,
+}))
 
 const viewLabel = computed(() =>
   viewMode.value === 'all'
@@ -71,7 +81,7 @@ function syncMetrics() {
   metrics.score = leader.score
   metrics.bestScore = env.bestScore
   metrics.survival = leader.survival
-  metrics.rewardHistory = env.rewardHistory
+  metrics.scoreHistory = env.scoreHistory
 }
 
 function renderScene() {
@@ -294,15 +304,11 @@ onUnmounted(() => {
     </div>
 
     <flappy-panel
+      :metrics="trainingMetrics"
       :env-count="FLAPPY_WORLD.numEnvs"
-      :episodes="metrics.episodes"
       :reward="metrics.reward"
       :best-reward="metrics.bestReward"
-      :score="metrics.score"
-      :best-score="metrics.bestScore"
       :survival="metrics.survival"
-      :reward-history="metrics.rewardHistory"
-      :speed="speed"
       :checkpoint-status="checkpointStatus"
       :view-label="viewLabel"
       :moving-pipes="movingPipes"

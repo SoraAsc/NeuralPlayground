@@ -5,17 +5,14 @@ import BaseButton from '@/features/experiments/ui/BaseButton.vue'
 import ParamSlider from '@/features/game/ui/ParamSlider.vue'
 import SimulationPanel from '@/features/unity/ui/SimulationPanel.vue'
 import type { InfoSection, StatRow } from '@/features/unity/ui/SimulationPanel.vue'
+import type { TrainingMetrics } from '@/features/game/model/training-metrics'
 
 const props = defineProps<{
+  metrics: TrainingMetrics
   envCount: number
-  episodes: number
   reward: number
   bestReward: number
-  score: number
-  bestScore: number
   survival: number
-  rewardHistory: number[]
-  speed: number
   checkpointStatus: string
   viewLabel: string
   movingPipes: boolean
@@ -31,14 +28,16 @@ const emit = defineEmits<{
   'update:pipeVerticalSpeed': [value: number]
 }>()
 
-const simulation = computed(() => ({ status: 'training' as const }))
+const simulation = computed(() => ({
+  status: props.metrics.mode === 'paused' ? ('stopped' as const) : ('training' as const),
+}))
 const statRows = computed<StatRow[]>(() => [
   { label: 'Ambientes paralelos', value: props.envCount, format: 'int' },
-  { label: 'Episódios', value: props.episodes, format: 'int' },
+  { label: 'Episódios', value: props.metrics.episodes, format: 'int' },
   { label: `Recompensa (${props.viewLabel})`, value: props.reward, format: 'float' },
   { label: 'Melhor recompensa', value: props.bestReward, format: 'float' },
-  { label: `Canos (${props.viewLabel})`, value: props.score, format: 'int' },
-  { label: 'Recorde de canos', value: props.bestScore, format: 'int' },
+  { label: `Canos (${props.viewLabel})`, value: props.metrics.currentResult, format: 'int' },
+  { label: 'Recorde de canos', value: props.metrics.bestResult, format: 'int' },
   { label: `Sobrevivência (${props.viewLabel})`, value: props.survival, format: 'time' },
 ])
 
@@ -85,8 +84,8 @@ const infoSections: InfoSection[] = [
   <simulation-panel
     :simulation="simulation"
     :stat-rows="statRows"
-    :reward-history="rewardHistory"
-    chart-label="Recompensa por episódio"
+    :reward-history="metrics.history"
+    chart-label="Canos por episódio"
     :info-sections="infoSections"
     default-tab="stats"
   >
@@ -102,7 +101,7 @@ const infoSections: InfoSection[] = [
           <param-slider
             label="Velocidade"
             description="Passos vetorizados processados por frame"
-            :model-value="speed"
+            :model-value="metrics.stepsPerFrame"
             :min="1"
             :max="100"
             format="int"
