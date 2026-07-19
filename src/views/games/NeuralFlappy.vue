@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Graphics, type Ticker } from 'pixi.js'
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
-import { Pause, Play, RotateCcw } from '@lucide/vue'
+import { Pause, Play, RotateCcw, ScanLine } from '@lucide/vue'
 import BaseButton from '@/features/experiments/ui/BaseButton.vue'
 import FlappyPanel from '@/features/pixijs/flappy-bird/ui/FlappyPanel.vue'
 import { FLAPPY_WORLD, FlappyPPOEnvironment } from '@/features/pixijs/flappy-bird/ai/flappy-env'
@@ -13,6 +13,7 @@ const container = ref<HTMLDivElement | null>(null)
 const checkpointInput = ref<HTMLInputElement | null>(null)
 const ready = ref(false)
 const paused = ref(false)
+const debugMode = ref(false)
 const speed = ref(1)
 const movingPipes = ref(false)
 const pipeVerticalSpeed = ref(20)
@@ -26,6 +27,11 @@ const metrics = reactive({
   bestScore: 0,
   survival: 0,
   scoreHistory: [] as number[],
+  action: 0,
+  birdVelocity: 0,
+  horizontalDistance: 0,
+  verticalDistance: 0,
+  pipeVelocity: 0,
 })
 
 const { theme } = useTheme()
@@ -82,6 +88,12 @@ function syncMetrics() {
   metrics.bestScore = env.bestScore
   metrics.survival = leader.survival
   metrics.scoreHistory = env.scoreHistory
+  const debug = env.debugState(leader)
+  metrics.action = debug.action
+  metrics.birdVelocity = debug.velocity
+  metrics.horizontalDistance = debug.horizontalDistance
+  metrics.verticalDistance = debug.verticalDistance
+  metrics.pipeVelocity = debug.pipeVelocity
 }
 
 function renderScene() {
@@ -152,6 +164,27 @@ function renderScene() {
     if (bird.index === leader.index || viewMode.value !== 'all') {
       g.circle(birdX, y, radius + 4).stroke({ color, width: 2, alpha: 0.9 })
     }
+  }
+
+  if (debugMode.value) {
+    const focus = focusedBird()
+    const debug = env.debugState(focus)
+    const focusY = focus.y * sy
+    const targetX = (debug.pipeX + FLAPPY_WORLD.pipeWidth / 2) * sx
+    const targetY = debug.gapY * sy
+    g.moveTo(birdX, focusY).lineTo(targetX, targetY)
+    g.stroke({ color: colors.foreground, width: 1.5, alpha: 0.45 })
+    const markerRadius = 9 * Math.min(sx, sy)
+    g.circle(targetX, targetY, markerRadius).stroke({
+      color: colors.foreground,
+      width: 2,
+      alpha: 0.75,
+    })
+    g.moveTo(targetX - markerRadius * 1.5, targetY).lineTo(targetX + markerRadius * 1.5, targetY)
+    g.moveTo(targetX, targetY - markerRadius * 1.5).lineTo(targetX, targetY + markerRadius * 1.5)
+    g.stroke({ color: colors.foreground, width: 1, alpha: 0.45 })
+    g.moveTo(birdX, focusY).lineTo(birdX, focusY + debug.velocity * 0.12 * sy)
+    g.stroke({ color: colors.foreground, width: 2, alpha: 0.4 })
   }
 }
 
@@ -268,7 +301,7 @@ onUnmounted(() => {
           Bird {{ index }}
         </base-button>
       </div>
-      <div class="relative h-[60vh] min-h-[420px] overflow-hidden bg-background">
+      <div class="relative h-[60vh] min-h-105 overflow-hidden bg-background">
         <div ref="container" class="h-full w-full" />
         <div
           class="absolute right-6 top-1/2 flex -translate-y-1/2 flex-col gap-2 rounded-xl border border-border/50 bg-background/55 p-1.5 shadow-2xl backdrop-blur-md"
@@ -290,6 +323,16 @@ onUnmounted(() => {
             @click="resetLearning"
           >
             <rotate-ccw />
+          </base-button>
+          <div class="my-1 h-px w-4 bg-border/50" />
+          <base-button
+            :variant="debugMode ? 'primary' : 'outline'"
+            size="icon"
+            class="rounded-lg"
+            :title="debugMode ? 'Ocultar diagnóstico' : 'Mostrar diagnóstico'"
+            @click="debugMode = !debugMode"
+          >
+            <scan-line />
           </base-button>
         </div>
         <div
@@ -313,6 +356,12 @@ onUnmounted(() => {
       :view-label="viewLabel"
       :moving-pipes="movingPipes"
       :pipe-vertical-speed="pipeVerticalSpeed"
+      :debug-mode="debugMode"
+      :action="metrics.action"
+      :bird-velocity="metrics.birdVelocity"
+      :horizontal-distance="metrics.horizontalDistance"
+      :vertical-distance="metrics.verticalDistance"
+      :debug-pipe-velocity="metrics.pipeVelocity"
       @update:speed="speed = Math.max(1, Math.round($event))"
       @save="saveCheckpoint"
       @load="chooseCheckpoint"

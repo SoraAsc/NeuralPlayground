@@ -17,6 +17,12 @@ const props = defineProps<{
   viewLabel: string
   movingPipes: boolean
   pipeVerticalSpeed: number
+  debugMode: boolean
+  action: number
+  birdVelocity: number
+  horizontalDistance: number
+  verticalDistance: number
+  debugPipeVelocity: number
 }>()
 
 const emit = defineEmits<{
@@ -161,6 +167,38 @@ const infoSections: InfoSection[] = [
           </p>
         </section>
       </div>
+    </template>
+    <template #stats-extra>
+      <section v-if="debugMode" class="border-t border-border px-4 py-4">
+        <div class="mb-3 flex items-center gap-2">
+          <span class="h-1.5 w-1.5 rounded-full bg-foreground/70" />
+          <h3 class="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+            Diagnóstico da IA
+          </h3>
+        </div>
+        <div class="divide-y divide-border/40 border-y border-border/40">
+          <div class="flex items-center justify-between py-2">
+            <span class="text-xs text-muted-foreground">Ação</span>
+            <span class="font-mono text-xs text-foreground">{{ action === 1 ? 'bater asas' : 'aguardar' }}</span>
+          </div>
+          <div class="flex items-center justify-between py-2">
+            <span class="text-xs text-muted-foreground">Velocidade vertical</span>
+            <span class="font-mono text-xs text-foreground">{{ birdVelocity.toFixed(1) }} u/s</span>
+          </div>
+          <div class="flex items-center justify-between py-2">
+            <span class="text-xs text-muted-foreground">Distância horizontal</span>
+            <span class="font-mono text-xs text-foreground">{{ horizontalDistance.toFixed(1) }} u</span>
+          </div>
+          <div class="flex items-center justify-between py-2">
+            <span class="text-xs text-muted-foreground">Distância ao centro</span>
+            <span class="font-mono text-xs text-foreground">{{ verticalDistance.toFixed(1) }} u</span>
+          </div>
+          <div v-if="movingPipes" class="flex items-center justify-between py-2">
+            <span class="text-xs text-muted-foreground">Velocidade do vão</span>
+            <span class="font-mono text-xs text-foreground">{{ debugPipeVelocity.toFixed(1) }} u/s</span>
+          </div>
+        </div>
+      </section>
     </template>
   </simulation-panel>
 </template>

@@ -23,6 +23,7 @@ type BirdEnvironment = {
   episodeReward: number
   score: number
   survival: number
+  lastAction: number
 }
 
 export type FlappyPipe = {
@@ -35,6 +36,16 @@ export type FlappyPipe = {
 export type FlappySnapshot = BirdEnvironment & {
   index: number
   opacity: number
+}
+
+export type FlappyDebugState = {
+  action: number
+  velocity: number
+  pipeX: number
+  gapY: number
+  horizontalDistance: number
+  verticalDistance: number
+  pipeVelocity: number
 }
 
 const randomGap = () => MIN_GAP_Y + Math.random() * (MAX_GAP_Y - MIN_GAP_Y)
@@ -134,6 +145,21 @@ export class FlappyPPOEnvironment {
     )
   }
 
+  debugState(snapshot: FlappySnapshot): FlappyDebugState {
+    const pipe = this.nextPipe(snapshot)
+    return {
+      action: snapshot.lastAction,
+      velocity: snapshot.velocity,
+      pipeX: pipe.x,
+      gapY: pipe.gapY,
+      horizontalDistance: pipe.x - BIRD_X,
+      verticalDistance: pipe.gapY - snapshot.y,
+      pipeVelocity: this.movingPipes
+        ? pipe.verticalDirection * this.pipeVerticalSpeed
+        : 0,
+    }
+  }
+
   exportCheckpoint() {
     return this.nnw.saveCheckpoint(this.models())
   }
@@ -190,6 +216,7 @@ export class FlappyPPOEnvironment {
       episodeReward: 0,
       score: 0,
       survival: 0,
+      lastAction: 0,
     }
   }
 
@@ -210,6 +237,7 @@ export class FlappyPPOEnvironment {
   }
 
   private stepEnvironment(env: BirdEnvironment, action: number) {
+    env.lastAction = action
     if (action === 1) env.velocity = FLAP_VELOCITY
     env.velocity += GRAVITY * DT
     env.y += env.velocity * DT
