@@ -58,6 +58,7 @@ export class FlappyPPOEnvironment {
   private agent!: PPOAgent
   private envs: BirdEnvironment[] = []
   private rolloutSteps = 0
+  private trainingEnabled = true
 
   episodes = 0
   bestReward = Number.NEGATIVE_INFINITY
@@ -164,6 +165,16 @@ export class FlappyPPOEnvironment {
     return this.nnw.saveCheckpoint(this.models())
   }
 
+  setTraining(training: boolean) {
+    this.trainingEnabled = training
+    this.agent.training = training
+    this.rolloutSteps = 0
+  }
+
+  get training() {
+    return this.trainingEnabled
+  }
+
   importCheckpoint(buffer: ArrayBuffer) {
     this.agent?.dispose()
     this.nnw.loadCheckpoint(buffer, this.models())
@@ -194,6 +205,7 @@ export class FlappyPPOEnvironment {
       maxGradNorm: 0.5,
       epochs: 4,
     })
+    this.agent.training = this.trainingEnabled
   }
 
   private createEnvironment(index: number): BirdEnvironment {

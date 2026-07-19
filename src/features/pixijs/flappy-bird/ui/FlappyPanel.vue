@@ -18,6 +18,7 @@ const props = defineProps<{
   movingPipes: boolean
   pipeVerticalSpeed: number
   debugMode: boolean
+  training: boolean
   action: number
   birdVelocity: number
   horizontalDistance: number
@@ -30,12 +31,18 @@ const emit = defineEmits<{
   save: []
   load: []
   reset: []
+  'toggle-training': []
   'update:movingPipes': [value: boolean]
   'update:pipeVerticalSpeed': [value: number]
 }>()
 
 const simulation = computed(() => ({
-  status: props.metrics.mode === 'paused' ? ('stopped' as const) : ('training' as const),
+  status:
+    props.metrics.mode === 'paused'
+      ? ('stopped' as const)
+      : props.metrics.mode === 'evaluation'
+        ? ('testing' as const)
+        : ('training' as const),
 }))
 const statRows = computed<StatRow[]>(() => [
   { label: 'Ambientes paralelos', value: props.envCount, format: 'int' },
@@ -156,6 +163,14 @@ const infoSections: InfoSection[] = [
             </span>
           </div>
           <div class="grid grid-cols-2 gap-2">
+            <base-button
+              class="col-span-2"
+              size="sm"
+              variant="outline"
+              @click="emit('toggle-training')"
+            >
+              {{ training ? 'Testar política' : 'Voltar a treinar' }}
+            </base-button>
             <base-button size="sm" @click="emit('save')">Salvar IA</base-button>
             <base-button size="sm" @click="emit('load')">Carregar IA</base-button>
             <base-button class="col-span-2" variant="danger" size="sm" @click="emit('reset')">

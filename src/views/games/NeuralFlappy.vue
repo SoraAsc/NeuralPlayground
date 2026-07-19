@@ -13,6 +13,7 @@ const container = ref<HTMLDivElement | null>(null)
 const checkpointInput = ref<HTMLInputElement | null>(null)
 const ready = ref(false)
 const paused = ref(false)
+const training = ref(true)
 const debugMode = ref(false)
 const speed = ref(1)
 const movingPipes = ref(false)
@@ -55,7 +56,7 @@ const trainingMetrics = computed<TrainingMetrics>(() => ({
   currentResult: metrics.score,
   bestResult: metrics.bestScore,
   history: metrics.scoreHistory,
-  mode: paused.value ? 'paused' : 'training',
+  mode: paused.value ? 'paused' : training.value ? 'training' : 'evaluation',
   stepsPerFrame: speed.value,
 }))
 
@@ -77,6 +78,15 @@ function updatePipeMotion(enabled = movingPipes.value, verticalSpeed = pipeVerti
   movingPipes.value = enabled
   pipeVerticalSpeed.value = Math.max(5, Math.min(45, Math.round(verticalSpeed)))
   env.setPipeMotion(movingPipes.value, pipeVerticalSpeed.value)
+}
+
+function toggleTraining() {
+  training.value = !training.value
+  paused.value = false
+  env.setTraining(training.value)
+  checkpointStatus.value = training.value
+    ? 'Treinamento PPO retomado'
+    : 'Modo de teste: política determinística e pesos bloqueados'
 }
 
 function syncMetrics() {
@@ -342,6 +352,7 @@ onUnmounted(() => {
           <span>reward {{ metrics.reward.toFixed(2) }}</span>
           <span>{{ metrics.survival.toFixed(1) }}s</span>
           <span v-if="movingPipes">canos {{ pipeVerticalSpeed }} u/s</span>
+          <span>{{ training ? 'treinando' : 'em teste' }}</span>
         </div>
       </div>
     </div>
@@ -357,6 +368,7 @@ onUnmounted(() => {
       :moving-pipes="movingPipes"
       :pipe-vertical-speed="pipeVerticalSpeed"
       :debug-mode="debugMode"
+      :training="training"
       :action="metrics.action"
       :bird-velocity="metrics.birdVelocity"
       :horizontal-distance="metrics.horizontalDistance"
@@ -366,6 +378,7 @@ onUnmounted(() => {
       @save="saveCheckpoint"
       @load="chooseCheckpoint"
       @reset="resetLearning"
+      @toggle-training="toggleTraining"
       @update:moving-pipes="updatePipeMotion($event)"
       @update:pipe-vertical-speed="updatePipeMotion(movingPipes, $event)"
     />
