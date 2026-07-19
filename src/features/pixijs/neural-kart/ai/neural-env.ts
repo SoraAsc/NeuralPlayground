@@ -14,7 +14,7 @@ export type NeuralKartBatchStep = {
   done: boolean
 }
 
-const CHECKPOINT_URL = '/models/neural-kart.nnw'
+const CHECKPOINT_URL = `${import.meta.env.BASE_URL}models/neural-kart.nnw`
 
 export type PPOSettings = {
   learningRate: number

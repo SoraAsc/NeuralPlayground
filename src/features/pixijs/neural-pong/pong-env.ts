@@ -8,7 +8,7 @@ const PADDLE_MARGIN = 28
 const BALL_SIZE = 12
 const PADDLE_SPEED = 360
 const BALL_SPEED = 300
-const CHECKPOINT_URL = '/models/neural-pong.nqt'
+const CHECKPOINT_URL = `${import.meta.env.BASE_URL}models/neural-pong.nqt`
 
 const X_BINS = 6
 const Y_BINS = 11
@@ -125,17 +125,26 @@ export class NeuralPongEnvironment {
       this.ballVy = -Math.abs(this.ballVy)
     }
 
-    let leftReward = (leftDistanceBefore - this.distanceFromBall('left')) / HEIGHT * 0.08 - 0.0005
-    let rightReward = (rightDistanceBefore - this.distanceFromBall('right')) / HEIGHT * 0.08 - 0.0005
+    let leftReward = ((leftDistanceBefore - this.distanceFromBall('left')) / HEIGHT) * 0.08 - 0.0005
+    let rightReward =
+      ((rightDistanceBefore - this.distanceFromBall('right')) / HEIGHT) * 0.08 - 0.0005
 
-    if (this.ballVx < 0 && this.ballX <= PADDLE_MARGIN + PADDLE_WIDTH
-        && this.ballX + BALL_SIZE >= PADDLE_MARGIN && this.overlapsPaddle(this.leftY)) {
+    if (
+      this.ballVx < 0 &&
+      this.ballX <= PADDLE_MARGIN + PADDLE_WIDTH &&
+      this.ballX + BALL_SIZE >= PADDLE_MARGIN &&
+      this.overlapsPaddle(this.leftY)
+    ) {
       this.ballX = PADDLE_MARGIN + PADDLE_WIDTH
       this.bounceFromPaddle(this.leftY, 1)
       leftReward += 0.35
       this.registerRally()
-    } else if (this.ballVx > 0 && this.ballX + BALL_SIZE >= WIDTH - PADDLE_MARGIN - PADDLE_WIDTH
-        && this.ballX <= WIDTH - PADDLE_MARGIN && this.overlapsPaddle(this.rightY)) {
+    } else if (
+      this.ballVx > 0 &&
+      this.ballX + BALL_SIZE >= WIDTH - PADDLE_MARGIN - PADDLE_WIDTH &&
+      this.ballX <= WIDTH - PADDLE_MARGIN &&
+      this.overlapsPaddle(this.rightY)
+    ) {
       this.ballX = WIDTH - PADDLE_MARGIN - PADDLE_WIDTH - BALL_SIZE
       this.bounceFromPaddle(this.rightY, -1)
       rightReward += 0.35
@@ -229,7 +238,7 @@ export class NeuralPongEnvironment {
     const vy = this.ballVy < -20 ? 0 : this.ballVy > 20 ? 2 : 1
     const x = bin(clamp(localX, 0, 0.999999), X_BINS)
     const y = bin(clamp(relativeY, 0, 0.999999), Y_BINS)
-    return (((x * Y_BINS + y) * VY_BINS + vy) * TOWARD_BINS + (toward ? 1 : 0))
+    return ((x * Y_BINS + y) * VY_BINS + vy) * TOWARD_BINS + (toward ? 1 : 0)
   }
 
   private agentDebug(state: number, action: number, table: Float32Array): PongAgentDebug {

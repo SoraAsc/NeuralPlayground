@@ -8,6 +8,7 @@ import { ref, computed } from 'vue'
 import type { TrainingMetrics, TrainingMode } from '@/features/game/model/training-metrics'
 
 const game = ref<InstanceType<typeof GameTemplate> | null>(null)
+const unityBaseUrl = `${import.meta.env.BASE_URL}unity`
 const {
   simulations,
   currentSimulationIndex,
@@ -133,16 +134,16 @@ const trainingMetrics = computed<TrainingMetrics>(() => {
         <game-template
           ref="game"
           class="w-full h-[60vh]"
-          loader-url="/unity/neural-snake/NeuralSnake.loader.js"
+          :loader-url="`${unityBaseUrl}/neural-snake/NeuralSnake.loader.js`"
           @ready="syncBackgroundColor"
           :config="{
-            dataUrl: '/unity/neural-snake/NeuralSnake.data.br',
-            frameworkUrl: '/unity/neural-snake/NeuralSnake.framework.js.br',
-            codeUrl: '/unity/neural-snake/NeuralSnake.wasm.br',
+            dataUrl: `${unityBaseUrl}/neural-snake/NeuralSnake.data.br`,
+            frameworkUrl: `${unityBaseUrl}/neural-snake/NeuralSnake.framework.js.br`,
+            codeUrl: `${unityBaseUrl}/neural-snake/NeuralSnake.wasm.br`,
             companyName: 'SoraAsc',
             productName: 'NeuralSnake',
             productVersion: '1.0',
-            streamingAssetsUrl: '/unity/streaming-assets',
+            streamingAssetsUrl: `${unityBaseUrl}/streaming-assets`,
           }"
         />
 

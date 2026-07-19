@@ -23,7 +23,7 @@ const training = ref(true)
 const debugMode = ref(false)
 const speed = ref(1)
 const viewMode = ref<'all' | 'best' | number>('best')
-const checkpointStatus = ref('Auto-load: /models/asteroids.nnw')
+const checkpointStatus = ref(`Auto-load: ${import.meta.env.BASE_URL}models/asteroids.nnw`)
 const metrics = reactive({
   episodes: 0,
   reward: 0,

@@ -1,6 +1,6 @@
 import { createNNW, type NeuralNetwork, type PPOAgent } from 'nnw'
 
-const CHECKPOINT_URL = '/models/asteroids.nnw'
+const CHECKPOINT_URL = `${import.meta.env.BASE_URL}models/asteroids.nnw`
 const NUM_ENVS = 12
 const OBSERVED_THREATS = 3
 const THREAT_FEATURES = 7
@@ -122,7 +122,10 @@ const pointSegmentDistanceSquared = (
   const dx = bx - ax
   const dy = by - ay
   const lengthSquared = dx * dx + dy * dy
-  const t = lengthSquared === 0 ? 0 : Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / lengthSquared))
+  const t =
+    lengthSquared === 0
+      ? 0
+      : Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / lengthSquared))
   const closestX = ax + dx * t
   const closestY = ay + dy * t
   return (px - closestX) ** 2 + (py - closestY) ** 2
@@ -177,18 +180,14 @@ const threatMetrics = (env: AsteroidsEnvironment, asteroid: Asteroid): ThreatMet
       ? -(dx * relativeVx + dy * relativeVy) / relativeSpeedSquared
       : Number.POSITIVE_INFINITY
   const approaching = rawTimeToClosest > 0
-  const timeToClosest = approaching
-    ? Math.min(rawTimeToClosest, THREAT_HORIZON)
-    : THREAT_HORIZON
+  const timeToClosest = approaching ? Math.min(rawTimeToClosest, THREAT_HORIZON) : THREAT_HORIZON
   const closestDx = dx + relativeVx * timeToClosest
   const closestDy = dy + relativeVy * timeToClosest
   const collisionRadius = SHIP_RADIUS * 1.55 + asteroid.radius * 0.82
   const closestClearance = Math.hypot(closestDx, closestDy) - collisionRadius
   const predictedProximity = Math.max(0, Math.min(1, 1 - closestClearance / 140))
   const urgency =
-    approaching && rawTimeToClosest <= THREAT_HORIZON
-      ? 1 - rawTimeToClosest / THREAT_HORIZON
-      : 0
+    approaching && rawTimeToClosest <= THREAT_HORIZON ? 1 - rawTimeToClosest / THREAT_HORIZON : 0
   const risk = predictedProximity * (0.2 + urgency * 0.8)
   return {
     asteroid,
@@ -207,11 +206,7 @@ const threatMetrics = (env: AsteroidsEnvironment, asteroid: Asteroid): ThreatMet
 const rankedThreats = (env: AsteroidsEnvironment) =>
   env.asteroids
     .map((asteroid) => threatMetrics(env, asteroid))
-    .sort(
-      (a, b) =>
-        b.risk - a.risk ||
-        a.dx ** 2 + a.dy ** 2 - (b.dx ** 2 + b.dy ** 2),
-    )
+    .sort((a, b) => b.risk - a.risk || a.dx ** 2 + a.dy ** 2 - (b.dx ** 2 + b.dy ** 2))
 
 const totalDanger = (env: AsteroidsEnvironment) =>
   rankedThreats(env)
@@ -443,9 +438,7 @@ export class AsteroidsPPOEnvironment {
       asteroidState.push(0, 0, 0, 0, 0, 1, 1)
     }
     const primaryThreat = threats[0]
-    const targetAngle = primaryThreat
-      ? Math.atan2(primaryThreat.dy, primaryThreat.dx)
-      : env.angle
+    const targetAngle = primaryThreat ? Math.atan2(primaryThreat.dy, primaryThreat.dx) : env.angle
     return [
       env.vx / MAX_SPEED,
       env.vy / MAX_SPEED,

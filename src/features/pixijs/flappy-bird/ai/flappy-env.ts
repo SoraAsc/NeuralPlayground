@@ -1,6 +1,6 @@
 import { createNNW, type NeuralNetwork, type PPOAgent } from 'nnw'
 
-const CHECKPOINT_URL = '/models/flappy-bird.nnw'
+const CHECKPOINT_URL = `${import.meta.env.BASE_URL}models/flappy-bird.nnw`
 const NUM_ENVS = 12
 const STATE_SIZE = 6
 const ROLLOUT_STEPS = 128
@@ -155,9 +155,7 @@ export class FlappyPPOEnvironment {
       gapY: pipe.gapY,
       horizontalDistance: pipe.x - BIRD_X,
       verticalDistance: pipe.gapY - snapshot.y,
-      pipeVelocity: this.movingPipes
-        ? pipe.verticalDirection * this.pipeVerticalSpeed
-        : 0,
+      pipeVelocity: this.movingPipes ? pipe.verticalDirection * this.pipeVerticalSpeed : 0,
     }
   }
 

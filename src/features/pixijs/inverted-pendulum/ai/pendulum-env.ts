@@ -21,7 +21,7 @@ const ANGLE_THRESHOLD = (12 * 2 * Math.PI) / 360
 const POSITION_THRESHOLD = 2.4
 const INPUT_SIZE = 4
 const ROLLOUT_STEPS = 128
-const CHECKPOINT_URL = '/models/inverted-pendulum.nnw'
+const CHECKPOINT_URL = `${import.meta.env.BASE_URL}models/inverted-pendulum.nnw`
 
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value))
 const randomInitialState = () => Math.random() * 0.1 - 0.05

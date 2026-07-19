@@ -19,7 +19,7 @@ const ready = ref(false)
 const paused = ref(false)
 const debugMode = ref(false)
 const speed = ref(8)
-const checkpointStatus = ref('Auto-load: /models/neural-pong.nqt')
+const checkpointStatus = ref(`Auto-load: ${import.meta.env.BASE_URL}models/neural-pong.nqt`)
 const metrics = reactive<PongSnapshot>({
   width: 800,
   height: 500,

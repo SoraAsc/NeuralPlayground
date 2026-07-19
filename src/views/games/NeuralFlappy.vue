@@ -19,7 +19,7 @@ const speed = ref(1)
 const movingPipes = ref(false)
 const pipeVerticalSpeed = ref(20)
 const viewMode = ref<'all' | 'best' | number>('all')
-const checkpointStatus = ref('Auto-load: /models/flappy-bird.nnw')
+const checkpointStatus = ref(`Auto-load: ${import.meta.env.BASE_URL}models/flappy-bird.nnw`)
 const metrics = reactive({
   episodes: 0,
   reward: 0,

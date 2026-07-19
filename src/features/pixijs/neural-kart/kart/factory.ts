@@ -21,7 +21,7 @@ interface KartDefinition {
 
 export const KART_DEFINITIONS: Record<KartType, KartDefinition> = {
   compact: {
-    sprite: '/sprites/kart/compact_blue.png',
+    sprite: `${import.meta.env.BASE_URL}sprites/kart/compact_blue.png`,
     config: {
       maxSpeed: 400,
       acceleration: 600,
@@ -31,7 +31,7 @@ export const KART_DEFINITIONS: Record<KartType, KartDefinition> = {
     },
   },
   sport: {
-    sprite: '/sprites/kart/sport_yellow.png',
+    sprite: `${import.meta.env.BASE_URL}sprites/kart/sport_yellow.png`,
     config: {
       maxSpeed: 600,
       acceleration: 800,

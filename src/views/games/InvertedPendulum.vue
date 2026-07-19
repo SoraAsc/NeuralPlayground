@@ -16,7 +16,7 @@ const training = ref(true)
 const debugMode = ref(false)
 const speed = ref(1)
 const checkpointInput = ref<HTMLInputElement | null>(null)
-const checkpointStatus = ref('Auto-load: /models/inverted-pendulum.nnw')
+const checkpointStatus = ref(`Auto-load: ${import.meta.env.BASE_URL}models/inverted-pendulum.nnw`)
 
 const metrics = reactive({
   angle: 0,
