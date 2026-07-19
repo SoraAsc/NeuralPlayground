@@ -213,6 +213,7 @@ export class AsteroidsPPOEnvironment {
   bestScore = 0
   bestWave = 1
   rewardHistory: number[] = []
+  scoreHistory: number[] = []
   autoLoadedCheckpoint = false
 
   async init() {
@@ -519,6 +520,8 @@ export class AsteroidsPPOEnvironment {
     this.bestWave = Math.max(this.bestWave, env.wave)
     this.rewardHistory.push(env.episodeReward)
     if (this.rewardHistory.length > 200) this.rewardHistory.shift()
+    this.scoreHistory.push(env.score)
+    if (this.scoreHistory.length > 200) this.scoreHistory.shift()
   }
 
   private resetSession() {
@@ -528,6 +531,7 @@ export class AsteroidsPPOEnvironment {
     this.bestScore = 0
     this.bestWave = 1
     this.rewardHistory = []
+    this.scoreHistory = []
     this.envs = Array.from({ length: NUM_ENVS }, (_, index) => this.createEnvironment(index))
   }
 

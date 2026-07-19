@@ -11,6 +11,7 @@ import {
 } from '@/features/pixijs/asteroids/ai/asteroids-env'
 import { useTheme } from '@/shared/lib/theme/useTheme'
 import { initPixi, pixiApp, releasePixi } from '@/shared/pixijs/pixi-app'
+import type { TrainingMetrics } from '@/features/game/model/training-metrics'
 
 defineOptions({ name: 'NeuralAsteroids' })
 
@@ -30,7 +31,7 @@ const metrics = reactive({
   survival: 0,
   wave: 1,
   bestWave: 1,
-  rewardHistory: [] as number[],
+  scoreHistory: [] as number[],
 })
 
 const { theme } = useTheme()
@@ -50,6 +51,14 @@ const viewLabel = computed(() =>
       ? 'melhor'
       : `nave ${viewMode.value + 1}`,
 )
+const trainingMetrics = computed<TrainingMetrics>(() => ({
+  episodes: metrics.episodes,
+  currentResult: metrics.score,
+  bestResult: metrics.bestScore,
+  history: metrics.scoreHistory,
+  mode: paused.value ? 'paused' : 'training',
+  stepsPerFrame: speed.value,
+}))
 
 function focusedShip() {
   const snapshots = env.snapshots()
@@ -67,7 +76,7 @@ function syncMetrics() {
   metrics.survival = ship.survival
   metrics.wave = ship.wave
   metrics.bestWave = env.bestWave
-  metrics.rewardHistory = env.rewardHistory
+  metrics.scoreHistory = env.scoreHistory
 }
 
 function drawShip(g: Graphics, ship: AsteroidsSnapshot, sx: number, sy: number, alpha: number) {
@@ -359,17 +368,13 @@ onUnmounted(() => {
     </div>
 
     <asteroids-panel
+      :metrics="trainingMetrics"
       :env-count="ASTEROIDS_WORLD.numEnvs"
-      :episodes="metrics.episodes"
       :reward="metrics.reward"
       :best-reward="metrics.bestReward"
-      :score="metrics.score"
-      :best-score="metrics.bestScore"
       :survival="metrics.survival"
       :wave="metrics.wave"
       :best-wave="metrics.bestWave"
-      :reward-history="metrics.rewardHistory"
-      :speed="speed"
       :checkpoint-status="checkpointStatus"
       :view-label="viewLabel"
       @update:speed="speed = Math.max(1, Math.round($event))"
