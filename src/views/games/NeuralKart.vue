@@ -41,6 +41,7 @@ const trackType = ref<'circuit' | 'oval' | 'snake' | 'crazy'>('circuit')
 const checkpointLimit = ref(20)
 const checkpointStatus = ref('Auto-load: /models/neural-kart.nnw')
 const checkpointInput = ref<HTMLInputElement | null>(null)
+const ppoTraining = ref(true)
 
 // Inspection State (Manual sync for reactivity)
 const inspection = reactive({
@@ -63,7 +64,7 @@ const trainingMetrics = computed<TrainingMetrics>(() => ({
   currentResult: inspection.reward,
   bestResult: inspection.bestReward,
   history: inspection.rewardHistory,
-  mode: 'training',
+  mode: ppoTraining.value ? 'training' : 'evaluation',
   stepsPerFrame: timeMultiplier.value,
 }))
 
@@ -187,6 +188,14 @@ async function clearCheckpoint() {
   } catch (error) {
     checkpointStatus.value = error instanceof Error ? error.message : 'Falha ao reiniciar IA'
   }
+}
+
+async function togglePPOTraining() {
+  ppoTraining.value = !ppoTraining.value
+  await NeuralKartEnvironment.setSharedTraining(ppoTraining.value)
+  checkpointStatus.value = ppoTraining.value
+    ? 'Treinamento PPO retomado'
+    : 'Modo de teste: política determinística e pesos bloqueados'
 }
 
 // Camera Pivot for smoothing
@@ -344,7 +353,7 @@ onUnmounted(() => {
           class="pointer-events-none absolute bottom-4 left-4 flex items-center gap-2 border border-white/10 bg-black/45 px-2.5 py-1.5 text-[10px] text-white/70 backdrop-blur-md"
         >
           <span class="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
-          PPO treinando · {{ timeMultiplier }}x ·
+          PPO {{ ppoTraining ? 'treinando' : 'em teste' }} · {{ timeMultiplier }}x ·
           {{ cameraMode === 'full' ? 'pista completa' : 'seguindo kart' }}
         </div>
       </div>
@@ -369,6 +378,7 @@ onUnmounted(() => {
       @save="saveCheckpoint"
       @load="chooseCheckpoint"
       @clear="clearCheckpoint"
+      @toggle-training="togglePPOTraining"
     />
 
     <input

@@ -27,6 +27,7 @@ const emit = defineEmits<{
   save: []
   load: []
   clear: []
+  'toggle-training': []
   'update:checkpointLimit': [value: number]
   'update:trackType': [value: 'circuit' | 'oval' | 'snake' | 'crazy']
 }>()
@@ -175,6 +176,9 @@ const infoSections: InfoSection[] = [
             </span>
           </div>
           <div class="grid grid-cols-2 gap-2">
+            <base-button class="col-span-2" size="sm" variant="outline" @click="emit('toggle-training')">
+              {{ metrics.mode === 'evaluation' ? 'Voltar a treinar' : 'Testar política' }}
+            </base-button>
             <base-button size="sm" @click="emit('save')">Salvar IA</base-button>
             <base-button size="sm" @click="emit('load')">Carregar IA</base-button>
             <base-button class="col-span-2" size="sm" variant="danger" @click="emit('clear')">

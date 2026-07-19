@@ -40,6 +40,7 @@ class SharedAgent {
   agent!: PPOAgent
   activeEnvs = 0
   version = 0
+  interactionVersion = 0
   publishedCheckpointLoaded = false
   private stepsSinceTrain = 0
   settings: PPOSettings = { ...DEFAULT_PPO_SETTINGS }
@@ -147,6 +148,12 @@ class SharedAgent {
     this.restartAgent()
   }
 
+  setTraining(training: boolean) {
+    this.agent.training = training
+    this.stepsSinceTrain = 0
+    this.interactionVersion += 1
+  }
+
   storeBatch(steps: NeuralKartBatchStep[]) {
     const pending = steps.map(({ env }) => env.getPendingStep())
     if (pending.every((step) => step !== null)) {
@@ -216,6 +223,7 @@ export class NeuralKartEnvironment {
   private pendingStep: PendingStep | null = null
   private disposed = false
   private sharedVersion = 0
+  private sharedInteractionVersion = 0
   private numEnvs: number
 
   private constructor(inputSize: number, outputSize: number, numEnvs: number) {
@@ -265,6 +273,17 @@ export class NeuralKartEnvironment {
     shared.updateSettings(settings)
   }
 
+  static async setSharedTraining(training: boolean) {
+    const shared = await SharedAgent['promise']
+    if (!shared) throw new Error('Agente Neural Kart ainda não foi inicializado')
+    shared.setTraining(training)
+  }
+
+  static async getSharedTraining() {
+    const shared = await SharedAgent['promise']
+    return shared?.agent.training ?? true
+  }
+
   static stepBatch(steps: NeuralKartBatchStep[]) {
     if (steps.length === 0) return
     const shared = steps[0]?.env.shared
@@ -284,6 +303,7 @@ export class NeuralKartEnvironment {
     this.envIndex = this.shared.activeEnvs
     this.shared.activeEnvs += 1
     this.sharedVersion = this.shared.version
+    this.sharedInteractionVersion = this.shared.interactionVersion
   }
 
   reset(): number[] {
@@ -307,6 +327,10 @@ export class NeuralKartEnvironment {
       this.totalReward = 0
       this.outputs.fill(0)
       this.resetStatistics()
+    }
+    if (this.sharedInteractionVersion !== this.shared.interactionVersion) {
+      this.pendingStep = null
+      this.sharedInteractionVersion = this.shared.interactionVersion
     }
 
     this.inputs = inputs.slice(0, this.inputSize)

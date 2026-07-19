@@ -191,7 +191,7 @@ export const aiSystem = (track: Track) => {
 
         if (input.source === 'ai') {
           const forward = Math.max(-1, Math.min(1, ai.env.outputs[0] ?? 0))
-          input.forward = forward
+          input.forward = progress.timeSinceSpawn < 0.6 ? Math.max(0.4, forward) : forward
           input.steer = Math.max(-1, Math.min(1, ai.env.outputs[1] ?? 0))
         }
       })
