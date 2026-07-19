@@ -7,6 +7,7 @@ import PongPanel from '@/features/pixijs/neural-pong/PongPanel.vue'
 import { NeuralPongEnvironment, type PongSnapshot } from '@/features/pixijs/neural-pong/pong-env'
 import { useTheme } from '@/shared/lib/theme/useTheme'
 import { initPixi, pixiApp, releasePixi } from '@/shared/pixijs/pixi-app'
+import type { TrainingMetrics } from '@/features/game/model/training-metrics'
 
 const container = ref<HTMLDivElement | null>(null)
 const checkpointInput = ref<HTMLInputElement | null>(null)
@@ -40,6 +41,14 @@ const palette = computed(() =>
     ? { background: 0x18202f, foreground: 0xf2f5f7 }
     : { background: 0xf2f5f7, foreground: 0x18202f },
 )
+const trainingMetrics = computed<TrainingMetrics>(() => ({
+  episodes: metrics.episodes,
+  currentResult: metrics.rallies,
+  bestResult: metrics.bestRally,
+  history: metrics.rallyHistory,
+  mode: paused.value ? 'paused' : metrics.training ? 'training' : 'evaluation',
+  stepsPerFrame: speed.value,
+}))
 let environment: NeuralPongEnvironment | null = null
 let graphics: Graphics | null = null
 let tick: ((ticker: Ticker) => void) | null = null
@@ -103,6 +112,7 @@ function renderScene() {
 }
 
 function setTraining(training: boolean) {
+  paused.value = false
   environment?.setTraining(training)
   syncMetrics()
 }
@@ -248,15 +258,10 @@ onUnmounted(() => {
     </div>
 
     <pong-panel
-      :episodes="metrics.episodes"
-      :rallies="metrics.rallies"
-      :best-rally="metrics.bestRally"
+      :metrics="trainingMetrics"
       :left-score="metrics.leftScore"
       :right-score="metrics.rightScore"
       :epsilon="metrics.epsilon"
-      :training="metrics.training"
-      :rally-history="metrics.rallyHistory"
-      :speed="speed"
       :checkpoint-status="checkpointStatus"
       @update:speed="speed = Math.max(1, Math.round($event))"
       @update:training="setTraining"

@@ -5,17 +5,13 @@ import BaseButton from '@/features/experiments/ui/BaseButton.vue'
 import ParamSlider from '@/features/game/ui/ParamSlider.vue'
 import SimulationPanel from '@/features/unity/ui/SimulationPanel.vue'
 import type { InfoSection, StatRow } from '@/features/unity/ui/SimulationPanel.vue'
+import type { TrainingMetrics } from '@/features/game/model/training-metrics'
 
 const props = defineProps<{
-  episodes: number
-  rallies: number
-  bestRally: number
+  metrics: TrainingMetrics
   leftScore: number
   rightScore: number
   epsilon: number
-  training: boolean
-  rallyHistory: number[]
-  speed: number
   checkpointStatus: string
 }>()
 
@@ -28,12 +24,17 @@ const emit = defineEmits<{
 }>()
 
 const simulation = computed(() => ({
-  status: props.training ? ('training' as const) : ('testing' as const),
+  status:
+    props.metrics.mode === 'paused'
+      ? ('stopped' as const)
+      : props.metrics.mode === 'training'
+        ? ('training' as const)
+        : ('testing' as const),
 }))
 const statRows = computed<StatRow[]>(() => [
-  { label: 'Episódios', value: props.episodes, format: 'int' },
-  { label: 'Rally atual', value: props.rallies, format: 'int' },
-  { label: 'Melhor rally', value: props.bestRally, format: 'int' },
+  { label: 'Episódios', value: props.metrics.episodes, format: 'int' },
+  { label: 'Rally atual', value: props.metrics.currentResult, format: 'int' },
+  { label: 'Melhor rally', value: props.metrics.bestResult, format: 'int' },
   { label: 'Placar esquerdo', value: props.leftScore, format: 'int' },
   { label: 'Placar direito', value: props.rightScore, format: 'int' },
   { label: 'Exploração ε', value: props.epsilon, format: 'float3' },
@@ -83,7 +84,7 @@ const infoSections: InfoSection[] = [
   <simulation-panel
     :simulation="simulation"
     :stat-rows="statRows"
-    :reward-history="rallyHistory"
+    :reward-history="metrics.history"
     chart-label="Rallies por episódio"
     :info-sections="infoSections"
     default-tab="stats"
@@ -100,7 +101,7 @@ const infoSections: InfoSection[] = [
           <param-slider
             label="Velocidade"
             description="Passos físicos processados por frame"
-            :model-value="speed"
+            :model-value="metrics.stepsPerFrame"
             :min="1"
             :max="128"
             format="int"
@@ -112,14 +113,14 @@ const infoSections: InfoSection[] = [
             <div class="grid grid-cols-2 gap-2">
               <base-button
                 size="sm"
-                :variant="training ? 'primary' : 'outline'"
+                :variant="metrics.mode === 'training' ? 'primary' : 'outline'"
                 @click="emit('update:training', true)"
               >
                 Treinar
               </base-button>
               <base-button
                 size="sm"
-                :variant="!training ? 'primary' : 'outline'"
+                :variant="metrics.mode === 'evaluation' ? 'primary' : 'outline'"
                 @click="emit('update:training', false)"
               >
                 Avaliar
