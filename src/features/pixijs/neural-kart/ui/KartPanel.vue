@@ -20,6 +20,13 @@ const props = defineProps<{
   bestLaps: number
   checkpointLimit: number
   trackType: 'circuit' | 'oval' | 'snake' | 'crazy'
+  debugMode: boolean
+  policyInputs: number[]
+  policyOutputs: number[]
+  appliedForward: number
+  appliedSteer: number
+  frontSensors: number[]
+  rearSensors: number[]
 }>()
 
 const emit = defineEmits<{
@@ -110,6 +117,10 @@ const infoSections: InfoSection[] = [
     ],
   },
 ]
+
+const input = (index: number) => props.policyInputs[index] ?? 0
+const output = (index: number) => props.policyOutputs[index] ?? 0
+const sensorList = (values: number[]) => values.map((value) => value.toFixed(0)).join(', ')
 </script>
 
 <template>
@@ -190,6 +201,48 @@ const infoSections: InfoSection[] = [
           </p>
         </section>
       </div>
+    </template>
+    <template #stats-extra>
+      <section v-if="debugMode" class="border-t border-border px-4 py-4">
+        <div class="mb-3 flex items-center gap-2">
+          <span class="h-1.5 w-1.5 rounded-full bg-foreground/70" />
+          <h3 class="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+            Diagnóstico da IA
+          </h3>
+        </div>
+        <div class="divide-y divide-border/40 border-y border-border/40">
+          <div class="flex items-center justify-between py-2">
+            <span class="text-xs text-muted-foreground">Saída aceleração</span>
+            <span class="font-mono text-xs text-foreground">{{ output(0).toFixed(3) }}</span>
+          </div>
+          <div class="flex items-center justify-between py-2">
+            <span class="text-xs text-muted-foreground">Saída direção</span>
+            <span class="font-mono text-xs text-foreground">{{ output(1).toFixed(3) }}</span>
+          </div>
+          <div class="flex items-center justify-between py-2">
+            <span class="text-xs text-muted-foreground">Comando aplicado</span>
+            <span class="font-mono text-xs text-foreground">
+              {{ appliedForward.toFixed(2) }} / {{ appliedSteer.toFixed(2) }}
+            </span>
+          </div>
+          <div class="flex items-center justify-between py-2">
+            <span class="text-xs text-muted-foreground">Alinhamento</span>
+            <span class="font-mono text-xs text-foreground">{{ input(7).toFixed(3) }}</span>
+          </div>
+          <div class="flex items-center justify-between py-2">
+            <span class="text-xs text-muted-foreground">Posição lateral</span>
+            <span class="font-mono text-xs text-foreground">{{ input(8).toFixed(3) }}</span>
+          </div>
+          <div class="flex items-center justify-between py-2">
+            <span class="text-xs text-muted-foreground">Distância ao checkpoint</span>
+            <span class="font-mono text-xs text-foreground">{{ input(11).toFixed(3) }}</span>
+          </div>
+        </div>
+        <div class="mt-3 flex flex-col gap-2 font-mono text-[9px] text-muted-foreground">
+          <p>sensores frontais [{{ sensorList(frontSensors) }}]</p>
+          <p>sensores traseiros [{{ sensorList(rearSensors) }}]</p>
+        </div>
+      </section>
     </template>
   </simulation-panel>
 </template>

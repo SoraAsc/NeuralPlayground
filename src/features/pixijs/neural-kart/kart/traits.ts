@@ -30,7 +30,7 @@ export const AISensors = trait(() => ({
   numRays: 5,
   numRearRays: 3,
   maxDistance: 200,
-  showVisuals: true,
+  showVisuals: false,
 }))
 
 export const KartConfig = trait({

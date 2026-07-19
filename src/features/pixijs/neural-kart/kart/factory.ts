@@ -85,12 +85,12 @@ export async function createKart(
       numRearRays: 3,
       rearDistances: [],
       maxDistance: 200,
-      showVisuals: true,
+      showVisuals: false,
     }),
     Progress({ currentCheckpoint: 0, laps: 0 }),
   )
 
-  if (source === 'ai' || source === 'manual') {
+  if (source === 'ai') {
     // Inputs:
     // velocity (2) + kart dynamics (5) + alignment/lateral (2)
     // + checkpoint direction/distance (3) + front sensors (5) + rear sensors (3) = 20

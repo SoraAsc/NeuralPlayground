@@ -27,20 +27,14 @@ export function releaseKartRendering() {
   sensorGraphics = null
 }
 
-window.addEventListener('keydown', (e) => {
-  if (e.key.toLowerCase() in keys) keys[e.key.toLowerCase() as keyof typeof keys] = true
+export function setKartInputKey(key: string, pressed: boolean) {
+  const normalizedKey = key.toLowerCase()
+  if (normalizedKey in keys) keys[normalizedKey as keyof typeof keys] = pressed
+}
 
-  // Toggle sensor visuals with 'K'
-  if (e.key.toLowerCase() === 'k') {
-    world.query(AISensors).updateEach(([sensors]) => {
-      sensors.showVisuals = !sensors.showVisuals
-    })
-  }
-})
-
-window.addEventListener('keyup', (e) => {
-  if (e.key.toLowerCase() in keys) keys[e.key.toLowerCase() as keyof typeof keys] = false
-})
+export function resetKartInputKeys() {
+  for (const key of Object.keys(keys) as Array<keyof typeof keys>) keys[key] = false
+}
 
 export function cleanupSystem() {
   world.query(Destroyed).updateEach((_, entity) => {
@@ -126,7 +120,7 @@ export function renderSystem() {
         sg.lineTo(transform.x + Math.cos(angle) * dist, transform.y + Math.sin(angle) * dist)
       }
 
-      sg.stroke({ width: 1, color: 0x00ff00, alpha: 0.5 })
+      sg.stroke({ width: 1, color: 0xffffff, alpha: 0.55 })
 
       // Rear
       const rearHalfArc = Math.PI / 4
@@ -140,7 +134,7 @@ export function renderSystem() {
         sg.lineTo(transform.x + Math.cos(angle) * dist, transform.y + Math.sin(angle) * dist)
       }
 
-      sg.stroke({ width: 1, color: 0xff4444, alpha: 0.5 })
+      sg.stroke({ width: 1, color: 0xffffff, alpha: 0.28 })
     }
   })
 }

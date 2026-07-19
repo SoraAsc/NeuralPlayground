@@ -9,6 +9,8 @@ import {
   renderSystem,
   cleanupSystem,
   releaseKartRendering,
+  resetKartInputKeys,
+  setKartInputKey,
 } from '@/features/pixijs/neural-kart/kart/systems'
 import { aiSystem } from '@/features/pixijs/neural-kart/ai/system'
 import { NeuralKartEnvironment } from '@/features/pixijs/neural-kart/ai/neural-env'
@@ -24,11 +26,18 @@ import {
   spawnKarts,
   sensorSystem,
 } from '@/features/pixijs/neural-kart/track'
-import { Transform, AI, Velocity, Input, Sprite } from '@/features/pixijs/neural-kart/kart/traits'
+import {
+  Transform,
+  AI,
+  Velocity,
+  Input,
+  Sprite,
+  AISensors,
+} from '@/features/pixijs/neural-kart/kart/traits'
 import { Progress } from '@/features/pixijs/neural-kart/track/track-checkpoints'
 import KartPanel from '@/features/pixijs/neural-kart/ui/KartPanel.vue'
 import BaseButton from '@/features/experiments/ui/BaseButton.vue'
-import { Camera, Focus, ScanLine } from '@lucide/vue'
+import { Brain, Camera, Focus, ScanLine } from '@lucide/vue'
 import type { TrackGenerator } from '@/features/pixijs/neural-kart/track'
 import type { TrainingMetrics } from '@/features/game/model/training-metrics'
 
@@ -42,6 +51,7 @@ const checkpointLimit = ref(20)
 const checkpointStatus = ref('Auto-load: /models/neural-kart.nnw')
 const checkpointInput = ref<HTMLInputElement | null>(null)
 const ppoTraining = ref(true)
+const debugMode = ref(false)
 
 // Inspection State (Manual sync for reactivity)
 const inspection = reactive({
@@ -57,6 +67,12 @@ const inspection = reactive({
   bestReward: 0,
   bestLaps: 0,
   rewardHistory: [] as number[],
+  policyInputs: [] as number[],
+  policyOutputs: [] as number[],
+  appliedForward: 0,
+  appliedSteer: 0,
+  frontSensors: [] as number[],
+  rearSensors: [] as number[],
 })
 
 const trainingMetrics = computed<TrainingMetrics>(() => ({
@@ -136,9 +152,23 @@ function toggleCamera() {
 function nextKart() {
   if (karts.value.length === 0) return
   selectedKartIndex.value = (selectedKartIndex.value + 1) % karts.value.length
+  syncDiagnosticSensors()
+}
+
+function syncDiagnosticSensors() {
+  karts.value.forEach((kart, index) => {
+    const sensors = kart.get(AISensors)
+    if (sensors) sensors.showVisuals = debugMode.value && index === selectedKartIndex.value
+  })
+}
+
+function toggleDiagnostics() {
+  debugMode.value = !debugMode.value
+  syncDiagnosticSensors()
 }
 
 const handleKeyDown = (e: KeyboardEvent) => {
+  setKartInputKey(e.key, true)
   if (e.key.toLowerCase() === 'c') {
     toggleCamera()
   }
@@ -146,6 +176,11 @@ const handleKeyDown = (e: KeyboardEvent) => {
     e.preventDefault()
     nextKart()
   }
+  if (e.key.toLowerCase() === 'k') toggleDiagnostics()
+}
+
+const handleKeyUp = (e: KeyboardEvent) => {
+  setKartInputKey(e.key, false)
 }
 
 async function saveCheckpoint() {
@@ -221,6 +256,7 @@ function updateGameSystems(delta: number) {
     const vel = activeKart.value.get(Velocity)
     const prog = activeKart.value.get(Progress)
     const ai = activeKart.value.get(AI)
+    const sensors = activeKart.value.get(AISensors)
 
     inspection.source = input?.source ?? 'unknown'
     inspection.speed = vel?.speed ?? 0
@@ -234,6 +270,12 @@ function updateGameSystems(delta: number) {
     inspection.bestReward = Number.isFinite(ai?.env?.bestReward) ? (ai?.env?.bestReward ?? 0) : 0
     inspection.bestLaps = ai?.env?.bestLaps ?? 0
     inspection.rewardHistory = ai?.env?.rewardHistory ?? []
+    inspection.policyInputs = ai?.env?.inputs ?? []
+    inspection.policyOutputs = ai?.env?.outputs ?? []
+    inspection.appliedForward = input?.forward ?? 0
+    inspection.appliedSteer = input?.steer ?? 0
+    inspection.frontSensors = sensors?.distances ?? []
+    inspection.rearSensors = sensors?.rearDistances ?? []
   }
 
   // Camera Logic
@@ -260,6 +302,7 @@ function updateGameSystems(delta: number) {
 
 onMounted(async () => {
   window.addEventListener('keydown', handleKeyDown)
+  window.addEventListener('keyup', handleKeyUp)
   if (gameContainer.value) {
     await initPixi(gameContainer.value)
 
@@ -268,10 +311,10 @@ onMounted(async () => {
 
     // 3. Setup Systems
     // 3. Spawn karts
-    // const playerKart = await spawnKart(0, 0, 0, 'sport', 'manual')
+    const playerKart = await spawnKart(0, 0, 0, 'sport', 'manual')
     const botKart = await spawnKart(0, 0, 0, 'compact', 'ai')
     const botKart2 = await spawnKart(0, 0, 0, 'sport', 'ai')
-    karts.value = [botKart, botKart2]
+    karts.value = [playerKart, botKart, botKart2]
     configureTrack()
     checkpointStatus.value = (await NeuralKartEnvironment.wasPublishedCheckpointLoaded())
       ? 'Modelo publicado carregado automaticamente'
@@ -286,6 +329,8 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeyDown)
+  window.removeEventListener('keyup', handleKeyUp)
+  resetKartInputKeys()
   stopGameLoop?.()
   stopGameLoop = null
   for (const kart of karts.value) {
@@ -347,6 +392,15 @@ onUnmounted(() => {
           >
             <scan-line />
           </base-button>
+          <base-button
+            :variant="debugMode ? 'primary' : 'outline'"
+            size="icon"
+            class="rounded-lg"
+            :title="debugMode ? 'Ocultar diagnóstico' : 'Mostrar diagnóstico'"
+            @click="toggleDiagnostics"
+          >
+            <brain />
+          </base-button>
         </div>
 
         <div
@@ -372,6 +426,13 @@ onUnmounted(() => {
       :checkpoint-limit="checkpointLimit"
       :track-type="trackType"
       :checkpoint-status="checkpointStatus"
+      :debug-mode="debugMode"
+      :policy-inputs="inspection.policyInputs"
+      :policy-outputs="inspection.policyOutputs"
+      :applied-forward="inspection.appliedForward"
+      :applied-steer="inspection.appliedSteer"
+      :front-sensors="inspection.frontSensors"
+      :rear-sensors="inspection.rearSensors"
       @update:speed="timeMultiplier = Math.max(1, Math.round($event))"
       @update:checkpoint-limit="setCheckpointLimit"
       @update:track-type="changeTrack"
