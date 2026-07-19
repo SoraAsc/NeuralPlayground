@@ -30,6 +30,7 @@ import KartPanel from '@/features/pixijs/neural-kart/ui/KartPanel.vue'
 import BaseButton from '@/features/experiments/ui/BaseButton.vue'
 import { Camera, Focus, ScanLine } from '@lucide/vue'
 import type { TrackGenerator } from '@/features/pixijs/neural-kart/track'
+import type { TrainingMetrics } from '@/features/game/model/training-metrics'
 
 const gameContainer = ref<HTMLDivElement | null>(null)
 const cameraMode = ref<'full' | 'follow'>('follow')
@@ -56,6 +57,15 @@ const inspection = reactive({
   bestLaps: 0,
   rewardHistory: [] as number[],
 })
+
+const trainingMetrics = computed<TrainingMetrics>(() => ({
+  episodes: inspection.episodes,
+  currentResult: inspection.reward,
+  bestResult: inspection.bestReward,
+  history: inspection.rewardHistory,
+  mode: 'training',
+  stepsPerFrame: timeMultiplier.value,
+}))
 
 const activeKart = computed(() => karts.value[selectedKartIndex.value])
 
@@ -341,19 +351,15 @@ onUnmounted(() => {
     </div>
 
     <kart-panel
-      :speed="timeMultiplier"
+      :metrics="trainingMetrics"
       :source="inspection.source"
       :kart-speed="inspection.speed"
       :checkpoint="inspection.cp"
       :laps="inspection.laps"
       :timeout="inspection.time"
       :max-timeout="inspection.maxTime"
-      :reward="inspection.reward"
-      :episodes="inspection.episodes"
       :last-reward="inspection.lastReward"
-      :best-reward="inspection.bestReward"
       :best-laps="inspection.bestLaps"
-      :reward-history="inspection.rewardHistory"
       :checkpoint-limit="checkpointLimit"
       :track-type="trackType"
       :checkpoint-status="checkpointStatus"

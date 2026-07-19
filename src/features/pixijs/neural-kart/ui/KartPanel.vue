@@ -5,22 +5,19 @@ import BaseButton from '@/features/experiments/ui/BaseButton.vue'
 import ParamSlider from '@/features/game/ui/ParamSlider.vue'
 import SimulationPanel from '@/features/unity/ui/SimulationPanel.vue'
 import type { InfoSection, StatRow } from '@/features/unity/ui/SimulationPanel.vue'
+import type { TrainingMetrics } from '@/features/game/model/training-metrics'
 
 const props = defineProps<{
-  speed: number
+  metrics: TrainingMetrics
   source: string
   kartSpeed: number
   checkpoint: number
   laps: number
   timeout: number
   maxTimeout: number
-  reward: number
   checkpointStatus: string
-  episodes: number
   lastReward: number
-  bestReward: number
   bestLaps: number
-  rewardHistory: number[]
   checkpointLimit: number
   trackType: 'circuit' | 'oval' | 'snake' | 'crazy'
 }>()
@@ -34,18 +31,20 @@ const emit = defineEmits<{
   'update:trackType': [value: 'circuit' | 'oval' | 'snake' | 'crazy']
 }>()
 
-const simulation = computed(() => ({ status: 'training' as const }))
+const simulation = computed(() => ({
+  status: props.metrics.mode === 'paused' ? ('stopped' as const) : ('training' as const),
+}))
 const statRows = computed<StatRow[]>(() => [
-  { label: 'Episódios', value: props.episodes, format: 'int' },
+  { label: 'Episódios', value: props.metrics.episodes, format: 'int' },
   { label: 'Controle', value: props.source || 'carregando', format: 'str' },
   { label: 'Velocidade do kart', value: props.kartSpeed, format: 'int' },
   { label: 'Checkpoint', value: props.checkpoint, format: 'int' },
   { label: 'Voltas', value: props.laps, format: 'int' },
   { label: 'Tempo sem progresso', value: props.timeout, format: 'float' },
   { label: 'Limite por checkpoint', value: props.maxTimeout, format: 'float' },
-  { label: 'Recompensa acumulada', value: props.reward, format: 'float' },
+  { label: 'Recompensa acumulada', value: props.metrics.currentResult, format: 'float' },
   { label: 'Última recompensa', value: props.lastReward, format: 'float' },
-  { label: 'Melhor recompensa', value: props.bestReward, format: 'float' },
+  { label: 'Melhor recompensa', value: props.metrics.bestResult, format: 'float' },
   { label: 'Maior número de voltas', value: props.bestLaps, format: 'int' },
 ])
 
@@ -116,7 +115,7 @@ const infoSections: InfoSection[] = [
   <simulation-panel
     :simulation="simulation"
     :stat-rows="statRows"
-    :reward-history="rewardHistory"
+    :reward-history="metrics.history"
     chart-label="Recompensa por episódio"
     :info-sections="infoSections"
     default-tab="stats"
@@ -133,7 +132,7 @@ const infoSections: InfoSection[] = [
           <param-slider
             label="Velocidade"
             description="Passos processados a cada frame"
-            :model-value="speed"
+            :model-value="metrics.stepsPerFrame"
             :min="1"
             :max="100"
             :step="1"
