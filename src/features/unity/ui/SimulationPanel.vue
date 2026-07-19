@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { Brain, BarChart2, Info } from '@lucide/vue'
 import { cn } from '@/shared/lib/utils'
+import TrainingChart from '@/features/game/ui/TrainingChart.vue'
 
 export type SimPanelTab = 'params' | 'stats' | 'info'
 
@@ -46,17 +47,6 @@ const props = withDefaults(
 const activeTab = ref<SimPanelTab>(props.defaultTab)
 
 const isActive = computed(() => !!props.simulation && props.simulation.status !== 'stopped')
-
-const rewardPoints = computed(() => {
-  const h = props.rewardHistory
-  if (h.length < 2) return ''
-  const W = 280,
-    H = 100
-  const min = Math.min(...h),
-    max = Math.max(...h)
-  const range = max - min || 1
-  return h.map((v, i) => `${(i / (h.length - 1)) * W},${H - ((v - min) / range) * H}`).join(' ')
-})
 
 const tabs = computed(() => {
   const all = [
@@ -151,67 +141,8 @@ const fmt = (row: StatRow): string => {
 
     <!-- STATS -->
     <div v-else-if="activeTab === 'stats'" class="flex flex-col flex-1 overflow-y-auto">
-      <div class="border-b border-border p-3 shrink-0">
-        <p class="text-[10px] text-muted-foreground mb-2 text-center">{{ chartLabel }}</p>
-        <div
-          :class="
-            cn(
-              'bg-background rounded border border-border/50',
-              'h-25 flex items-center justify-center overflow-hidden',
-            )
-          "
-        >
-          <svg
-            v-if="rewardPoints"
-            viewBox="0 0 280 100"
-            class="w-full h-full"
-            preserveAspectRatio="none"
-          >
-            <line
-              x1="0"
-              y1="25"
-              x2="280"
-              y2="25"
-              stroke="currentColor"
-              stroke-opacity="0.06"
-              stroke-width="1"
-            />
-            <line
-              x1="0"
-              y1="50"
-              x2="280"
-              y2="50"
-              stroke="currentColor"
-              stroke-opacity="0.06"
-              stroke-width="1"
-            />
-            <line
-              x1="0"
-              y1="75"
-              x2="280"
-              y2="75"
-              stroke="currentColor"
-              stroke-opacity="0.06"
-              stroke-width="1"
-            />
-            <polyline
-              :points="rewardPoints + ' 280,100 0,100'"
-              fill="currentColor"
-              fill-opacity="0.06"
-              stroke="none"
-            />
-            <polyline
-              :points="rewardPoints"
-              fill="none"
-              stroke="currentColor"
-              stroke-opacity="0.8"
-              stroke-width="1.5"
-              stroke-linejoin="round"
-              stroke-linecap="round"
-            />
-          </svg>
-          <span v-else class="text-[10px] text-muted-foreground/40">Sem dados</span>
-        </div>
+      <div class="shrink-0 border-b border-border p-3">
+        <training-chart :values="rewardHistory" :label="chartLabel" />
       </div>
 
       <div class="divide-y divide-border/50">
