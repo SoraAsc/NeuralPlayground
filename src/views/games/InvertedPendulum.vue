@@ -7,6 +7,7 @@ import PendulumPanel from '@/features/pixijs/inverted-pendulum/ui/PendulumPanel.
 import { PendulumEnvironment } from '@/features/pixijs/inverted-pendulum/ai/pendulum-env'
 import { useTheme } from '@/shared/lib/theme/useTheme'
 import { initPixi, pixiApp, releasePixi } from '@/shared/pixijs/pixi-app'
+import type { TrainingMetrics } from '@/features/game/model/training-metrics'
 
 const container = ref<HTMLDivElement | null>(null)
 const ready = ref(false)
@@ -26,7 +27,7 @@ const metrics = reactive({
   stability: 0,
   bestStability: 0,
   episodes: 0,
-  rewardHistory: [] as number[],
+  stabilityHistory: [] as number[],
 })
 
 const { theme } = useTheme()
@@ -40,6 +41,15 @@ const palette = computed(() =>
     : { background: 0xf2f5f7, foreground: 0x18202f },
 )
 
+const trainingMetrics = computed<TrainingMetrics>(() => ({
+  episodes: metrics.episodes,
+  currentResult: metrics.stability,
+  bestResult: metrics.bestStability,
+  history: metrics.stabilityHistory,
+  mode: paused.value ? 'paused' : 'training',
+  stepsPerFrame: speed.value,
+}))
+
 function syncMetrics() {
   metrics.angle = env.theta
   metrics.angularVelocity = env.angularVelocity
@@ -51,7 +61,7 @@ function syncMetrics() {
   metrics.stability = env.stability
   metrics.bestStability = env.bestStability
   metrics.episodes = env.episodes
-  metrics.rewardHistory = env.rewardHistory
+  metrics.stabilityHistory = env.stabilityHistory
 }
 
 function renderScene() {
@@ -256,18 +266,14 @@ onUnmounted(() => {
     </div>
 
     <pendulum-panel
+      :metrics="trainingMetrics"
       :angle="metrics.angle"
       :force="metrics.force"
       :cart-position="metrics.cartPosition"
       :cart-velocity="metrics.cartVelocity"
       :reward="metrics.reward"
       :best-reward="metrics.bestReward"
-      :stability="metrics.stability"
-      :best-stability="metrics.bestStability"
       :angular-velocity="metrics.angularVelocity"
-      :episodes="metrics.episodes"
-      :reward-history="metrics.rewardHistory"
-      :speed="speed"
       :checkpoint-status="checkpointStatus"
       @update:speed="speed = Math.max(1, Math.round($event))"
       @reset="resetEpisode"

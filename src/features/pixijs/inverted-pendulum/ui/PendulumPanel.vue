@@ -5,20 +5,17 @@ import BaseButton from '@/features/experiments/ui/BaseButton.vue'
 import ParamSlider from '@/features/game/ui/ParamSlider.vue'
 import SimulationPanel from '@/features/unity/ui/SimulationPanel.vue'
 import type { InfoSection, StatRow } from '@/features/unity/ui/SimulationPanel.vue'
+import type { TrainingMetrics } from '@/features/game/model/training-metrics'
 
 const props = defineProps<{
+  metrics: TrainingMetrics
   angle: number
   force: number
   cartPosition: number
   cartVelocity: number
   reward: number
   bestReward: number
-  stability: number
-  bestStability: number
   angularVelocity: number
-  episodes: number
-  rewardHistory: number[]
-  speed: number
   checkpointStatus: string
 }>()
 
@@ -29,9 +26,11 @@ const emit = defineEmits<{
   load: []
 }>()
 
-const simulation = computed(() => ({ status: 'training' as const }))
+const simulation = computed(() => ({
+  status: props.metrics.mode === 'paused' ? ('stopped' as const) : ('training' as const),
+}))
 const statRows = computed<StatRow[]>(() => [
-  { label: 'Episódios', value: props.episodes, format: 'int' },
+  { label: 'Episódios', value: props.metrics.episodes, format: 'int' },
   { label: 'Posição da base', value: props.cartPosition, format: 'float3' },
   { label: 'Velocidade da base', value: props.cartVelocity, format: 'float3' },
   { label: 'Ângulo', value: (props.angle * 180) / Math.PI, format: 'float' },
@@ -39,8 +38,8 @@ const statRows = computed<StatRow[]>(() => [
   { label: 'Força aplicada', value: props.force, format: 'float' },
   { label: 'Recompensa atual', value: props.reward, format: 'int' },
   { label: 'Melhor recompensa', value: props.bestReward, format: 'int' },
-  { label: 'Estabilidade atual', value: props.stability, format: 'time' },
-  { label: 'Melhor estabilidade', value: props.bestStability, format: 'time' },
+  { label: 'Estabilidade atual', value: props.metrics.currentResult, format: 'time' },
+  { label: 'Melhor estabilidade', value: props.metrics.bestResult, format: 'time' },
 ])
 
 const infoSections: InfoSection[] = [
@@ -85,8 +84,8 @@ const infoSections: InfoSection[] = [
   <simulation-panel
     :simulation="simulation"
     :stat-rows="statRows"
-    :reward-history="rewardHistory"
-    chart-label="Duração por episódio"
+    :reward-history="metrics.history"
+    chart-label="Estabilidade por episódio"
     :info-sections="infoSections"
     default-tab="stats"
   >
@@ -102,7 +101,7 @@ const infoSections: InfoSection[] = [
           <param-slider
             label="Velocidade"
             description="Passos físicos processados por frame"
-            :model-value="speed"
+            :model-value="metrics.stepsPerFrame"
             :min="1"
             :max="100"
             format="int"

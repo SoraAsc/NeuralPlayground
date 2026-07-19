@@ -47,6 +47,7 @@ export class PendulumEnvironment {
   bestStability = 0
   episodes = 0
   rewardHistory: number[] = []
+  stabilityHistory: number[] = []
   autoLoadedCheckpoint = false
 
   async init() {
@@ -150,6 +151,7 @@ export class PendulumEnvironment {
     this.bestReward = Number.NEGATIVE_INFINITY
     this.bestStability = 0
     this.rewardHistory = []
+    this.stabilityHistory = []
   }
 
   private createAgent() {
@@ -210,6 +212,8 @@ export class PendulumEnvironment {
     this.bestReward = Math.max(this.bestReward, this.episodeReward)
     this.rewardHistory.push(this.episodeReward)
     if (this.rewardHistory.length > 200) this.rewardHistory.shift()
+    this.stabilityHistory.push(this.stability)
+    if (this.stabilityHistory.length > 200) this.stabilityHistory.shift()
   }
 
   private resetEpisode() {
