@@ -137,9 +137,9 @@ const trainingMetrics = computed<TrainingMetrics>(() => {
           :loader-url="`${unityBaseUrl}/neural-snake/NeuralSnake.loader.js`"
           @ready="syncBackgroundColor"
           :config="{
-            dataUrl: `${unityBaseUrl}/neural-snake/NeuralSnake.data.br`,
-            frameworkUrl: `${unityBaseUrl}/neural-snake/NeuralSnake.framework.js.br`,
-            codeUrl: `${unityBaseUrl}/neural-snake/NeuralSnake.wasm.br`,
+            dataUrl: `${unityBaseUrl}/neural-snake/NeuralSnake.data.unityweb`,
+            frameworkUrl: `${unityBaseUrl}/neural-snake/NeuralSnake.framework.js.unityweb`,
+            codeUrl: `${unityBaseUrl}/neural-snake/NeuralSnake.wasm.unityweb`,
             companyName: 'SoraAsc',
             productName: 'NeuralSnake',
             productVersion: '1.0',
