@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Graphics, type Ticker } from 'pixi.js'
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
-import { Pause, Play, RotateCcw } from '@lucide/vue'
+import { Pause, Play, RotateCcw, ScanLine } from '@lucide/vue'
 import BaseButton from '@/features/experiments/ui/BaseButton.vue'
 import PendulumPanel from '@/features/pixijs/inverted-pendulum/ui/PendulumPanel.vue'
 import { PendulumEnvironment } from '@/features/pixijs/inverted-pendulum/ai/pendulum-env'
@@ -12,6 +12,8 @@ import type { TrainingMetrics } from '@/features/game/model/training-metrics'
 const container = ref<HTMLDivElement | null>(null)
 const ready = ref(false)
 const paused = ref(false)
+const training = ref(true)
+const debugMode = ref(false)
 const speed = ref(1)
 const checkpointInput = ref<HTMLInputElement | null>(null)
 const checkpointStatus = ref('Auto-load: /models/inverted-pendulum.nnw')
@@ -46,7 +48,7 @@ const trainingMetrics = computed<TrainingMetrics>(() => ({
   currentResult: metrics.stability,
   bestResult: metrics.bestStability,
   history: metrics.stabilityHistory,
-  mode: paused.value ? 'paused' : 'training',
+  mode: paused.value ? 'paused' : training.value ? 'training' : 'evaluation',
   stepsPerFrame: speed.value,
 }))
 
@@ -94,6 +96,26 @@ function renderScene() {
   const rodLength = Math.min(height * 0.48, 240)
   const bobX = pivotX + Math.sin(env.theta) * rodLength
   const bobY = pivotY - Math.cos(env.theta) * rodLength
+
+  if (debugMode.value) {
+    const debug = env.debugState()
+    for (const limit of [-debug.angleThreshold, debug.angleThreshold]) {
+      g.moveTo(pivotX, pivotY).lineTo(
+        pivotX + Math.sin(limit) * rodLength,
+        pivotY - Math.cos(limit) * rodLength,
+      )
+    }
+    g.stroke({ color: colors.foreground, width: 1.5, alpha: 0.25 })
+    const velocityWidth = Math.max(-100, Math.min(100, env.cartVelocity * 45))
+    g.moveTo(pivotX, pivotY + 83).lineTo(pivotX + velocityWidth, pivotY + 83)
+    g.stroke({ color: colors.foreground, width: 3, alpha: 0.35 })
+    const tangentLength = Math.max(-70, Math.min(70, env.angularVelocity * 35))
+    g.moveTo(bobX, bobY).lineTo(
+      bobX + Math.cos(env.theta) * tangentLength,
+      bobY + Math.sin(env.theta) * tangentLength,
+    )
+    g.stroke({ color: colors.foreground, width: 2, alpha: 0.4 })
+  }
 
   // Geometric base and stability target.
   g.moveTo(width / 2 - trackHalfWidth, pivotY + 38).lineTo(width / 2 + trackHalfWidth, pivotY + 38)
@@ -148,6 +170,15 @@ function resetEpisode() {
   } catch (error) {
     checkpointStatus.value = error instanceof Error ? error.message : 'Falha ao reiniciar IA'
   }
+}
+
+function toggleTraining() {
+  training.value = !training.value
+  paused.value = false
+  env.setTraining(training.value)
+  checkpointStatus.value = training.value
+    ? 'Treinamento PPO retomado'
+    : 'Modo de teste: política determinística e pesos bloqueados'
 }
 
 function saveCheckpoint() {
@@ -223,7 +254,7 @@ onUnmounted(() => {
     <div class="w-2/3 grow border border-border bg-card">
       <div class="flex items-center gap-2 border-b border-border px-4 py-2">
         <base-button variant="primary" size="dot" show-dot :active="ready && !paused">
-          PPO · Pêndulo 01
+          PPO {{ training ? 'treinando' : 'em teste' }} · Pêndulo 01
         </base-button>
         <span class="ml-auto text-[10px] text-muted-foreground/60"> CartPole-v1 </span>
       </div>
@@ -252,6 +283,16 @@ onUnmounted(() => {
           >
             <rotate-ccw />
           </base-button>
+          <div class="my-1 h-px w-4 bg-border/50" />
+          <base-button
+            :variant="debugMode ? 'primary' : 'outline'"
+            size="icon"
+            class="rounded-lg"
+            :title="debugMode ? 'Ocultar diagnóstico' : 'Mostrar diagnóstico'"
+            @click="debugMode = !debugMode"
+          >
+            <scan-line />
+          </base-button>
         </div>
 
         <div
@@ -275,6 +316,9 @@ onUnmounted(() => {
       :best-reward="metrics.bestReward"
       :angular-velocity="metrics.angularVelocity"
       :checkpoint-status="checkpointStatus"
+      :debug-mode="debugMode"
+      :training="training"
+      @toggle-training="toggleTraining"
       @update:speed="speed = Math.max(1, Math.round($event))"
       @reset="resetEpisode"
       @save="saveCheckpoint"

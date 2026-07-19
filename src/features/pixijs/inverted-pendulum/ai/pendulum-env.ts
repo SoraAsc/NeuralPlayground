@@ -34,6 +34,7 @@ export class PendulumEnvironment {
   private pending: PendingStep | null = null
   private rolloutSteps = 0
   private episodeSteps = 0
+  private trainingEnabled = true
 
   cartPosition = 0
   cartVelocity = 0
@@ -115,6 +116,26 @@ export class PendulumEnvironment {
     this.resetEpisode()
   }
 
+  setTraining(training: boolean) {
+    this.trainingEnabled = training
+    this.agent.training = training
+    this.pending = null
+    this.rolloutSteps = 0
+  }
+
+  get training() {
+    return this.trainingEnabled
+  }
+
+  debugState() {
+    return {
+      observation: this.getState(),
+      action: this.force / FORCE_MAGNITUDE,
+      angleThreshold: ANGLE_THRESHOLD,
+      positionThreshold: POSITION_THRESHOLD,
+    }
+  }
+
   exportCheckpoint() {
     return this.nnw.saveCheckpoint(this.models())
   }
@@ -170,6 +191,7 @@ export class PendulumEnvironment {
       maxGradNorm: 0.5,
       epochs: 4,
     })
+    this.agent.training = this.trainingEnabled
   }
 
   private getState() {

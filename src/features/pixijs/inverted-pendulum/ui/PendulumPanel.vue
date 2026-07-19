@@ -17,6 +17,8 @@ const props = defineProps<{
   bestReward: number
   angularVelocity: number
   checkpointStatus: string
+  debugMode: boolean
+  training: boolean
 }>()
 
 const emit = defineEmits<{
@@ -24,10 +26,16 @@ const emit = defineEmits<{
   reset: []
   save: []
   load: []
+  'toggle-training': []
 }>()
 
 const simulation = computed(() => ({
-  status: props.metrics.mode === 'paused' ? ('stopped' as const) : ('training' as const),
+  status:
+    props.metrics.mode === 'paused'
+      ? ('stopped' as const)
+      : props.metrics.mode === 'evaluation'
+        ? ('testing' as const)
+        : ('training' as const),
 }))
 const statRows = computed<StatRow[]>(() => [
   { label: 'Episódios', value: props.metrics.episodes, format: 'int' },
@@ -117,6 +125,14 @@ const infoSections: InfoSection[] = [
             </span>
           </div>
           <div class="grid grid-cols-2 gap-2">
+            <base-button
+              class="col-span-2"
+              size="sm"
+              variant="outline"
+              @click="emit('toggle-training')"
+            >
+              {{ training ? 'Testar política' : 'Voltar a treinar' }}
+            </base-button>
             <base-button size="sm" @click="emit('save')">Salvar IA</base-button>
             <base-button size="sm" @click="emit('load')">Carregar IA</base-button>
             <base-button class="col-span-2" variant="danger" size="sm" @click="emit('reset')">
@@ -128,6 +144,34 @@ const infoSections: InfoSection[] = [
           </p>
         </section>
       </div>
+    </template>
+    <template #stats-extra>
+      <section v-if="debugMode" class="border-t border-border px-4 py-4">
+        <div class="mb-3 flex items-center gap-2">
+          <span class="h-1.5 w-1.5 rounded-full bg-foreground/70" />
+          <h3 class="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+            Diagnóstico da IA
+          </h3>
+        </div>
+        <div class="mb-3 rounded border border-border/50 bg-background/40 px-3 py-2 font-mono text-[10px] leading-relaxed text-muted-foreground">
+          s = [{{ cartPosition.toFixed(3) }}, {{ cartVelocity.toFixed(3) }},
+          {{ angle.toFixed(3) }}, {{ angularVelocity.toFixed(3) }}]
+        </div>
+        <div class="divide-y divide-border/40 border-y border-border/40">
+          <div class="flex items-center justify-between py-2">
+            <span class="text-xs text-muted-foreground">Ação contínua</span>
+            <span class="font-mono text-xs text-foreground">{{ (force / 10).toFixed(3) }}</span>
+          </div>
+          <div class="flex items-center justify-between py-2">
+            <span class="text-xs text-muted-foreground">Limite angular</span>
+            <span class="font-mono text-xs text-foreground">±12°</span>
+          </div>
+          <div class="flex items-center justify-between py-2">
+            <span class="text-xs text-muted-foreground">Limite da pista</span>
+            <span class="font-mono text-xs text-foreground">±2.4</span>
+          </div>
+        </div>
+      </section>
     </template>
   </simulation-panel>
 </template>
