@@ -19,7 +19,7 @@
     "@tailwindcss/vite": "^4.2.2",
     "clsx": "^2.1.1",
     "koota": "^0.6.6",
-    "nnw": "link:../NNW/bindings/typescript",
+    "nnw": "https://github.com/SoraAsc/NNW/releases/download/v0.5.1/nnw-0.4.0.tgz",
     "pinia": "^3.0.4",
     "pixi.js": "^8.18.1",
     "tailwind-merge": "^3.5.0",

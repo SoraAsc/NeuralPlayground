@@ -6,6 +6,7 @@ let initialized = false
 export async function initPixi(container: HTMLElement) {
   if (!initialized) {
     await pixiApp.init({
+      preference: 'webgl',
       resizeTo: container,
       backgroundColor: 0x1099bb,
       antialias: true,
