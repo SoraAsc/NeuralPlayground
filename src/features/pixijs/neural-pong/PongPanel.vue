@@ -6,6 +6,7 @@ import ParamSlider from '@/features/game/ui/ParamSlider.vue'
 import SimulationPanel from '@/features/unity/ui/SimulationPanel.vue'
 import type { InfoSection, StatRow } from '@/features/unity/ui/SimulationPanel.vue'
 import type { TrainingMetrics } from '@/features/game/model/training-metrics'
+import type { PongAgentDebug, PongDiagnostics } from '@/features/pixijs/neural-pong/pong-env'
 
 const props = defineProps<{
   metrics: TrainingMetrics
@@ -13,6 +14,8 @@ const props = defineProps<{
   rightScore: number
   epsilon: number
   checkpointStatus: string
+  debugMode: boolean
+  diagnostics: PongDiagnostics
 }>()
 
 const emit = defineEmits<{
@@ -41,6 +44,18 @@ const statRows = computed<StatRow[]>(() => [
   { label: 'Estados da Q-table', value: 396, format: 'int' },
   { label: 'Ações por estado', value: 3, format: 'int' },
 ])
+
+function actionLabel(action: number) {
+  return action === 1 ? 'subir' : action === 2 ? 'descer' : 'parado'
+}
+
+function directionLabel(bin: number) {
+  return bin === 0 ? 'subindo' : bin === 2 ? 'descendo' : 'reta'
+}
+
+function qValues(debug: PongAgentDebug) {
+  return debug.qValues.map((value) => value.toFixed(3)).join(', ')
+}
 
 const infoSections: InfoSection[] = [
   {
@@ -147,6 +162,45 @@ const infoSections: InfoSection[] = [
           </p>
         </section>
       </div>
+    </template>
+    <template #stats-extra>
+      <section v-if="debugMode" class="border-t border-border px-4 py-4">
+        <div class="mb-3 flex items-center gap-2">
+          <span class="h-1.5 w-1.5 rounded-full bg-foreground/70" />
+          <h3 class="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+            Diagnóstico da IA
+          </h3>
+        </div>
+        <div class="flex flex-col gap-3">
+          <div
+            v-for="side in ['left', 'right'] as const"
+            :key="side"
+            class="border border-border/50 bg-background/30 p-3"
+          >
+            <div class="mb-2 flex items-center justify-between">
+              <span class="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+                {{ side === 'left' ? 'Raquete esquerda' : 'Raquete direita' }}
+              </span>
+              <span class="font-mono text-[10px] text-foreground">
+                estado {{ diagnostics[side].state }}
+              </span>
+            </div>
+            <div class="grid grid-cols-2 gap-x-3 gap-y-1 text-[10px]">
+              <span class="text-muted-foreground">Ação</span>
+              <span class="text-right font-mono text-foreground">{{ actionLabel(diagnostics[side].action) }}</span>
+              <span class="text-muted-foreground">Bins x / y</span>
+              <span class="text-right font-mono text-foreground">{{ diagnostics[side].xBin }} / {{ diagnostics[side].yBin }}</span>
+              <span class="text-muted-foreground">Bola</span>
+              <span class="text-right font-mono text-foreground">{{ directionLabel(diagnostics[side].verticalDirectionBin) }}</span>
+              <span class="text-muted-foreground">Aproximando</span>
+              <span class="text-right font-mono text-foreground">{{ diagnostics[side].toward ? 'sim' : 'não' }}</span>
+            </div>
+            <p class="mt-2 border-t border-border/40 pt-2 font-mono text-[9px] text-muted-foreground">
+              Q [parado, subir, descer] = [{{ qValues(diagnostics[side]) }}]
+            </p>
+          </div>
+        </div>
+      </section>
     </template>
   </simulation-panel>
 </template>

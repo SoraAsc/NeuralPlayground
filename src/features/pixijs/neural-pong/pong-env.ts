@@ -19,6 +19,21 @@ const ACTION_COUNT = 3 // stay, up, down
 
 type Side = 'left' | 'right'
 
+export type PongAgentDebug = {
+  state: number
+  action: number
+  qValues: number[]
+  xBin: number
+  yBin: number
+  verticalDirectionBin: number
+  toward: boolean
+}
+
+export type PongDiagnostics = {
+  left: PongAgentDebug
+  right: PongAgentDebug
+}
+
 export type PongSnapshot = {
   width: number
   height: number
@@ -61,6 +76,10 @@ export class NeuralPongEnvironment {
   private rallies = 0
   private bestRally = 0
   private rallyHistory: number[] = []
+  private lastLeftState = 0
+  private lastRightState = 0
+  private lastLeftAction = 0
+  private lastRightAction = 0
   autoLoadedCheckpoint = false
 
   static async create() {
@@ -86,6 +105,10 @@ export class NeuralPongEnvironment {
     const rightState = this.stateFor('right')
     const leftAction = this.agent.chooseAction(leftState)
     const rightAction = this.agent.chooseAction(rightState)
+    this.lastLeftState = leftState
+    this.lastRightState = rightState
+    this.lastLeftAction = leftAction
+    this.lastRightAction = rightAction
     const leftDistanceBefore = this.distanceFromBall('left')
     const rightDistanceBefore = this.distanceFromBall('right')
 
@@ -168,6 +191,14 @@ export class NeuralPongEnvironment {
     }
   }
 
+  diagnostics(): PongDiagnostics {
+    const table = this.agent.exportQTable()
+    return {
+      left: this.agentDebug(this.lastLeftState, this.lastLeftAction, table),
+      right: this.agentDebug(this.lastRightState, this.lastRightAction, table),
+    }
+  }
+
   setTraining(training: boolean) {
     this.agent.training = training
   }
@@ -199,6 +230,26 @@ export class NeuralPongEnvironment {
     const x = bin(clamp(localX, 0, 0.999999), X_BINS)
     const y = bin(clamp(relativeY, 0, 0.999999), Y_BINS)
     return (((x * Y_BINS + y) * VY_BINS + vy) * TOWARD_BINS + (toward ? 1 : 0))
+  }
+
+  private agentDebug(state: number, action: number, table: Float32Array): PongAgentDebug {
+    let cursor = state
+    const toward = cursor % TOWARD_BINS === 1
+    cursor = Math.floor(cursor / TOWARD_BINS)
+    const verticalDirectionBin = cursor % VY_BINS
+    cursor = Math.floor(cursor / VY_BINS)
+    const yBin = cursor % Y_BINS
+    const xBin = Math.floor(cursor / Y_BINS)
+    const offset = state * ACTION_COUNT
+    return {
+      state,
+      action,
+      qValues: Array.from(table.slice(offset, offset + ACTION_COUNT)),
+      xBin,
+      yBin,
+      verticalDirectionBin,
+      toward,
+    }
   }
 
   private movePaddle(y: number, action: number, dt: number) {

@@ -1,10 +1,14 @@
 <script setup lang="ts">
 import { Graphics, type Ticker } from 'pixi.js'
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
-import { Pause, Play, RotateCcw } from '@lucide/vue'
+import { Pause, Play, RotateCcw, ScanLine } from '@lucide/vue'
 import BaseButton from '@/features/experiments/ui/BaseButton.vue'
 import PongPanel from '@/features/pixijs/neural-pong/PongPanel.vue'
-import { NeuralPongEnvironment, type PongSnapshot } from '@/features/pixijs/neural-pong/pong-env'
+import {
+  NeuralPongEnvironment,
+  type PongDiagnostics,
+  type PongSnapshot,
+} from '@/features/pixijs/neural-pong/pong-env'
 import { useTheme } from '@/shared/lib/theme/useTheme'
 import { initPixi, pixiApp, releasePixi } from '@/shared/pixijs/pixi-app'
 import type { TrainingMetrics } from '@/features/game/model/training-metrics'
@@ -13,6 +17,7 @@ const container = ref<HTMLDivElement | null>(null)
 const checkpointInput = ref<HTMLInputElement | null>(null)
 const ready = ref(false)
 const paused = ref(false)
+const debugMode = ref(false)
 const speed = ref(8)
 const checkpointStatus = ref('Auto-load: /models/neural-pong.nqt')
 const metrics = reactive<PongSnapshot>({
@@ -34,6 +39,26 @@ const metrics = reactive<PongSnapshot>({
   training: true,
   rallyHistory: [],
 })
+const diagnostics = reactive<PongDiagnostics>({
+  left: {
+    state: 0,
+    action: 0,
+    qValues: [0, 0, 0],
+    xBin: 0,
+    yBin: 0,
+    verticalDirectionBin: 0,
+    toward: false,
+  },
+  right: {
+    state: 0,
+    action: 0,
+    qValues: [0, 0, 0],
+    xBin: 0,
+    yBin: 0,
+    verticalDirectionBin: 0,
+    toward: false,
+  },
+})
 
 const { theme } = useTheme()
 const palette = computed(() =>
@@ -54,7 +79,9 @@ let graphics: Graphics | null = null
 let tick: ((ticker: Ticker) => void) | null = null
 
 function syncMetrics() {
-  if (environment) Object.assign(metrics, environment.snapshot())
+  if (!environment) return
+  Object.assign(metrics, environment.snapshot())
+  if (debugMode.value) Object.assign(diagnostics, environment.diagnostics())
 }
 
 function renderScene() {
@@ -109,12 +136,33 @@ function renderScene() {
     width: Math.max(1, scale),
     alpha: 0.12,
   })
+
+  if (debugMode.value) {
+    const leftCenterX = leftX + paddleWidth / 2
+    const rightCenterX = rightX + paddleWidth / 2
+    const leftCenterY = (metrics.leftY + metrics.paddleHeight / 2) * sy
+    const rightCenterY = (metrics.rightY + metrics.paddleHeight / 2) * sy
+    g.moveTo(leftCenterX, leftCenterY).lineTo(ballX, ballY)
+    g.moveTo(rightCenterX, rightCenterY).lineTo(ballX, ballY)
+    g.stroke({ color: colors.foreground, width: 1, alpha: 0.22 })
+    for (const x of [leftCenterX, rightCenterX]) {
+      g.moveTo(x - 8 * scale, ballY).lineTo(x + 8 * scale, ballY)
+      g.circle(x, ballY, 5 * scale)
+    }
+    g.stroke({ color: colors.foreground, width: 1.5, alpha: 0.55 })
+  }
 }
 
 function setTraining(training: boolean) {
   paused.value = false
   environment?.setTraining(training)
   syncMetrics()
+}
+
+function toggleDebug() {
+  debugMode.value = !debugMode.value
+  syncMetrics()
+  renderScene()
 }
 
 function resetLearning() {
@@ -244,6 +292,16 @@ onUnmounted(() => {
           >
             <rotate-ccw />
           </base-button>
+          <div class="my-1 h-px w-4 bg-border/50" />
+          <base-button
+            :variant="debugMode ? 'primary' : 'outline'"
+            size="icon"
+            class="rounded-lg"
+            :title="debugMode ? 'Ocultar diagnóstico' : 'Mostrar diagnóstico'"
+            @click="toggleDebug"
+          >
+            <scan-line />
+          </base-button>
         </div>
 
         <div
@@ -263,6 +321,8 @@ onUnmounted(() => {
       :right-score="metrics.rightScore"
       :epsilon="metrics.epsilon"
       :checkpoint-status="checkpointStatus"
+      :debug-mode="debugMode"
+      :diagnostics="diagnostics"
       @update:speed="speed = Math.max(1, Math.round($event))"
       @update:training="setTraining"
       @save="saveCheckpoint"
