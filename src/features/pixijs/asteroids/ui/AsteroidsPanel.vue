@@ -17,6 +17,13 @@ const props = defineProps<{
   bestWave: number
   checkpointStatus: string
   viewLabel: string
+  debugMode: boolean
+  rotationAction: string
+  propulsionAction: boolean
+  shootingAction: boolean
+  primaryRisk: number
+  primaryThreatTime: number
+  primaryThreatClearance: number
 }>()
 
 const emit = defineEmits<{
@@ -129,6 +136,42 @@ const infoSections: InfoSection[] = [
           </p>
         </section>
       </div>
+    </template>
+    <template #stats-extra>
+      <section v-if="debugMode" class="border-t border-border px-4 py-4">
+        <div class="mb-3 flex items-center gap-2">
+          <span class="h-1.5 w-1.5 rounded-full bg-foreground/70" />
+          <h3 class="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+            Diagnóstico da IA
+          </h3>
+        </div>
+        <div class="divide-y divide-border/40 border-y border-border/40">
+          <div class="flex items-center justify-between py-2">
+            <span class="text-xs text-muted-foreground">Rotação</span>
+            <span class="font-mono text-xs text-foreground">{{ rotationAction }}</span>
+          </div>
+          <div class="flex items-center justify-between py-2">
+            <span class="text-xs text-muted-foreground">Propulsão</span>
+            <span class="font-mono text-xs text-foreground">{{ propulsionAction ? 'sim' : 'não' }}</span>
+          </div>
+          <div class="flex items-center justify-between py-2">
+            <span class="text-xs text-muted-foreground">Disparo</span>
+            <span class="font-mono text-xs text-foreground">{{ shootingAction ? 'sim' : 'não' }}</span>
+          </div>
+          <div class="flex items-center justify-between py-2">
+            <span class="text-xs text-muted-foreground">Risco principal</span>
+            <span class="font-mono text-xs text-foreground">{{ (primaryRisk * 100).toFixed(0) }}%</span>
+          </div>
+          <div class="flex items-center justify-between py-2">
+            <span class="text-xs text-muted-foreground">Maior aproximação</span>
+            <span class="font-mono text-xs text-foreground">{{ primaryThreatTime.toFixed(2) }}s</span>
+          </div>
+          <div class="flex items-center justify-between py-2">
+            <span class="text-xs text-muted-foreground">Folga prevista</span>
+            <span class="font-mono text-xs text-foreground">{{ primaryThreatClearance.toFixed(0) }}u</span>
+          </div>
+        </div>
+      </section>
     </template>
   </simulation-panel>
 </template>

@@ -55,11 +55,25 @@ type AsteroidsEnvironment = {
   wave: number
   thrusting: boolean
   firing: boolean
+  rotationAction: number
+  propulsionAction: number
+  shootingAction: number
 }
 
 export type AsteroidsSnapshot = AsteroidsEnvironment & {
   index: number
   opacity: number
+}
+
+export type AsteroidsThreatSnapshot = {
+  dx: number
+  dy: number
+  closestDx: number
+  closestDy: number
+  radius: number
+  timeToClosest: number
+  closestClearance: number
+  risk: number
 }
 
 const wrap = (value: number, maximum: number) => ((value % maximum) + maximum) % maximum
@@ -145,6 +159,8 @@ type ThreatMetrics = {
   dy: number
   relativeVx: number
   relativeVy: number
+  closestDx: number
+  closestDy: number
   timeToClosest: number
   closestClearance: number
   risk: number
@@ -180,6 +196,8 @@ const threatMetrics = (env: AsteroidsEnvironment, asteroid: Asteroid): ThreatMet
     dy,
     relativeVx,
     relativeVy,
+    closestDx,
+    closestDy,
     timeToClosest,
     closestClearance,
     risk,
@@ -288,6 +306,21 @@ export class AsteroidsPPOEnvironment {
     )
   }
 
+  debugThreats(snapshot: AsteroidsSnapshot): AsteroidsThreatSnapshot[] {
+    return rankedThreats(snapshot)
+      .slice(0, OBSERVED_THREATS)
+      .map((threat) => ({
+        dx: threat.dx,
+        dy: threat.dy,
+        closestDx: threat.closestDx,
+        closestDy: threat.closestDy,
+        radius: threat.asteroid.radius,
+        timeToClosest: threat.timeToClosest,
+        closestClearance: threat.closestClearance,
+        risk: threat.risk,
+      }))
+  }
+
   exportCheckpoint() {
     return this.nnw.saveCheckpoint(this.models())
   }
@@ -341,6 +374,9 @@ export class AsteroidsPPOEnvironment {
       wave: 1,
       thrusting: false,
       firing: false,
+      rotationAction: 0,
+      propulsionAction: 0,
+      shootingAction: 0,
     }
     this.spawnWave(env)
     return env
@@ -418,6 +454,9 @@ export class AsteroidsPPOEnvironment {
     const dangerBefore = totalDanger(env)
     env.thrusting = false
     env.firing = false
+    env.rotationAction = rotation
+    env.propulsionAction = propulsion
+    env.shootingAction = shooting
     if (rotation === 1) env.angle += TURN_SPEED * DT
     if (rotation === 2) env.angle -= TURN_SPEED * DT
     env.angle = Math.atan2(Math.sin(env.angle), Math.cos(env.angle))

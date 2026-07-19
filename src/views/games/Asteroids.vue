@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Graphics, type Ticker } from 'pixi.js'
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
-import { Pause, Play, RotateCcw } from '@lucide/vue'
+import { Pause, Play, RotateCcw, ScanLine } from '@lucide/vue'
 import BaseButton from '@/features/experiments/ui/BaseButton.vue'
 import AsteroidsPanel from '@/features/pixijs/asteroids/ui/AsteroidsPanel.vue'
 import {
@@ -19,6 +19,7 @@ const container = ref<HTMLDivElement | null>(null)
 const checkpointInput = ref<HTMLInputElement | null>(null)
 const ready = ref(false)
 const paused = ref(false)
+const debugMode = ref(false)
 const speed = ref(1)
 const viewMode = ref<'all' | 'best' | number>('best')
 const checkpointStatus = ref('Auto-load: /models/asteroids.nnw')
@@ -32,6 +33,12 @@ const metrics = reactive({
   wave: 1,
   bestWave: 1,
   scoreHistory: [] as number[],
+  rotationAction: 0,
+  propulsionAction: 0,
+  shootingAction: 0,
+  primaryRisk: 0,
+  primaryThreatTime: 0,
+  primaryThreatClearance: 0,
 })
 
 const { theme } = useTheme()
@@ -77,6 +84,17 @@ function syncMetrics() {
   metrics.wave = ship.wave
   metrics.bestWave = env.bestWave
   metrics.scoreHistory = env.scoreHistory
+  metrics.rotationAction = ship.rotationAction
+  metrics.propulsionAction = ship.propulsionAction
+  metrics.shootingAction = ship.shootingAction
+  const primaryThreat = env.debugThreats(ship)[0]
+  metrics.primaryRisk = primaryThreat?.risk ?? 0
+  metrics.primaryThreatTime = primaryThreat?.timeToClosest ?? 0
+  metrics.primaryThreatClearance = primaryThreat?.closestClearance ?? 0
+}
+
+function rotationLabel(action: number) {
+  return action === 1 ? 'direita' : action === 2 ? 'esquerda' : 'parado'
 }
 
 function drawShip(g: Graphics, ship: AsteroidsSnapshot, sx: number, sy: number, alpha: number) {
@@ -220,6 +238,41 @@ function renderScene() {
     width: 1,
     alpha: 0.18,
   })
+
+  if (debugMode.value) {
+    const originX = focus.x * sx
+    const originY = focus.y * sy
+    g.moveTo(originX, originY).lineTo(
+      (focus.x + focus.vx * 0.35) * sx,
+      (focus.y + focus.vy * 0.35) * sy,
+    )
+    g.stroke({ color: colors.foreground, width: 2, alpha: 0.35 })
+
+    env.debugThreats(focus).forEach((threat, index) => {
+      const asteroidX = (focus.x + threat.dx) * sx
+      const asteroidY = (focus.y + threat.dy) * sy
+      const closestX = (focus.x + threat.closestDx) * sx
+      const closestY = (focus.y + threat.closestDy) * sy
+      const alpha = 0.2 + threat.risk * 0.65
+      g.moveTo(originX, originY).lineTo(asteroidX, asteroidY)
+      g.stroke({
+        color: colors.foreground,
+        width: index === 0 ? 2 : 1,
+        alpha,
+      })
+      g.moveTo(asteroidX, asteroidY).lineTo(closestX, closestY)
+      g.stroke({ color: colors.foreground, width: 1, alpha: alpha * 0.55 })
+      const markerRadius = (index === 0 ? 8 : 5) * Math.min(sx, sy)
+      g.circle(closestX, closestY, markerRadius).stroke({
+        color: colors.foreground,
+        width: index === 0 ? 2 : 1,
+        alpha,
+      })
+      g.moveTo(closestX - markerRadius, closestY).lineTo(closestX + markerRadius, closestY)
+      g.moveTo(closestX, closestY - markerRadius).lineTo(closestX, closestY + markerRadius)
+      g.stroke({ color: colors.foreground, width: 1, alpha })
+    })
+  }
 }
 
 function resetLearning() {
@@ -355,9 +408,19 @@ onUnmounted(() => {
           >
             <rotate-ccw />
           </base-button>
+          <div class="my-1 h-px w-4 bg-border/50" />
+          <base-button
+            :variant="debugMode ? 'primary' : 'outline'"
+            size="icon"
+            class="rounded-lg"
+            :title="debugMode ? 'Ocultar diagnóstico' : 'Mostrar diagnóstico'"
+            @click="debugMode = !debugMode"
+          >
+            <scan-line />
+          </base-button>
         </div>
         <div
-          class="pointer-events-none absolute bottom-4 left-4 flex gap-4 border border-border/40 bg-background/55 px-3 py-2 font-mono text-[10px] text-foreground backdrop-blur-md"
+          class="pointer-events-none absolute bottom-4 left-4 flex max-w-[calc(100%-2rem)] flex-wrap gap-x-4 gap-y-1 border border-border/40 bg-background/55 px-3 py-2 font-mono text-[10px] text-foreground backdrop-blur-md"
         >
           <span>{{ viewLabel }} · {{ metrics.score }} asteroides</span>
           <span>onda {{ metrics.wave }}</span>
@@ -377,6 +440,13 @@ onUnmounted(() => {
       :best-wave="metrics.bestWave"
       :checkpoint-status="checkpointStatus"
       :view-label="viewLabel"
+      :debug-mode="debugMode"
+      :rotation-action="rotationLabel(metrics.rotationAction)"
+      :propulsion-action="metrics.propulsionAction === 1"
+      :shooting-action="metrics.shootingAction === 1"
+      :primary-risk="metrics.primaryRisk"
+      :primary-threat-time="metrics.primaryThreatTime"
+      :primary-threat-clearance="metrics.primaryThreatClearance"
       @update:speed="speed = Math.max(1, Math.round($event))"
       @save="saveCheckpoint"
       @load="chooseCheckpoint"
