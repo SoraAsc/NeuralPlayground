@@ -1,48 +1,83 @@
-# neural-playground
+# Neural Playground
 
-This template should help get you started developing with Vue 3 in Vite.
+An interactive reinforcement learning laboratory where neural agents learn, train, and compete in real-time environments.
 
-## Recommended IDE Setup
+[Open the live playground](https://soraasc.github.io/NeuralPlayground/)
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+## About
 
-## Recommended Browser Setup
+Neural Playground brings together a collection of visual reinforcement learning experiments in the browser. Each environment explores a different control problem, action space, and training setup while exposing live metrics and simulation controls.
 
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
+The playground uses [NNW](https://github.com/SoraAsc/NNW) for neural-network and reinforcement-learning workloads. The Unity-based snake experiment is developed separately in [NeuralSnake](https://github.com/SoraAsc/NeuralSnake) and embedded here as a WebGL build.
 
-## Type Support for `.vue` Imports in TS
+## Experiments
 
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
+| Experiment        | Algorithm  | Action space   | Engine      |
+| ----------------- | ---------- | -------------- | ----------- |
+| Neural Snake      | Q-Learning | Discrete       | Unity WebGL |
+| Neural Kart       | PPO        | Continuous     | PixiJS      |
+| Inverted Pendulum | PPO        | Continuous     | PixiJS      |
+| Neural Flappy     | PPO        | Discrete       | PixiJS      |
+| Neural Pong       | Q-Learning | Discrete       | PixiJS      |
+| Asteroids         | PPO        | Multi-discrete | PixiJS      |
 
-## Customize configuration
+## Tech stack
 
-See [Vite Configuration Reference](https://vite.dev/config/).
+- Vue 3 and TypeScript
+- Vite
+- PixiJS
+- Unity WebGL
+- NNW and WebAssembly
+- Pinia
+- Tailwind CSS
+- Koota ECS
 
-## Project Setup
+## Local development
+
+Requirements:
+
+- Node.js 24
+- pnpm 10
+
+Install the dependencies:
 
 ```sh
 pnpm install
 ```
 
-### Compile and Hot-Reload for Development
+Start the development server:
 
 ```sh
 pnpm dev
 ```
 
-### Type-Check, Compile and Minify for Production
+Create a production build:
 
 ```sh
 pnpm build
 ```
 
-### Lint with [ESLint](https://eslint.org/)
+## Quality checks
+
+Run the TypeScript checks:
+
+```sh
+pnpm type-check
+```
+
+Run the linters:
 
 ```sh
 pnpm lint
 ```
+
+## Deployment
+
+Pushes to `main` are built and deployed automatically to GitHub Pages through GitHub Actions. The Vite base path is derived from the repository name during the workflow, so assets are generated under the correct Pages URL.
+
+The Unity build uses Brotli compression with Decompression Fallback enabled. Its `.unityweb` assets include a browser-side fallback for static hosts such as GitHub Pages, where custom `Content-Encoding` headers cannot be configured.
+
+## Related projects
+
+- [NNW](https://github.com/SoraAsc/NNW) — neural-network and reinforcement-learning library used by the browser experiments.
+- [NeuralSnake](https://github.com/SoraAsc/NeuralSnake) — Unity reinforcement-learning environment embedded in Neural Playground.
