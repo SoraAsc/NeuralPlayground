@@ -5,10 +5,10 @@ import { useNeuralSnake } from '@/features/unity/games/snake/use-neural-snake'
 import GameTemplate from '@/features/unity/ui/GameTemplate.vue'
 import { Plus, X, Brain, Play, RotateCcw, Pause } from '@lucide/vue'
 import { ref, computed } from 'vue'
+import type { TrainingMetrics, TrainingMode } from '@/features/game/model/training-metrics'
 
 const game = ref<InstanceType<typeof GameTemplate> | null>(null)
 const {
-  episodes,
   simulations,
   currentSimulationIndex,
   changeSelectedSimulation,
@@ -50,26 +50,41 @@ const isAllTraining = computed(
     targetSimulations.value.every((s) => s.status === 'training'),
 )
 
-// const globalStats = computed(() => {
-//   if (currentSimulationIndex.value !== -1 || simulations.value.length === 0) return null
+const aggregateRewardHistory = computed(() => {
+  const histories = targetSimulations.value.map((simulation) => simulation.rewardHistory)
+  const length = Math.max(0, ...histories.map((history) => history.length))
+  return Array.from({ length }, (_, index) => {
+    const values = histories
+      .map((history) => history[index])
+      .filter((value): value is number => value !== undefined)
+    return values.length > 0 ? values.reduce((sum, value) => sum + value, 0) / values.length : 0
+  })
+})
 
-//   const count = simulations.value.length
-//   return {
-//     reward: simulations.value.reduce((acc, s) => acc + (s.reward || 0), 0) / count,
-//     bodySize: simulations.value.reduce((acc, s) => acc + (s.bodySize || 0), 0) / count,
-//     realTimeTrained:
-//       simulations.value.reduce((acc, s) => acc + (s.realTimeTrained || 0), 0) / count,
-//     acceleratedTimeTrained:
-//       simulations.value.reduce((acc, s) => acc + (s.acceleratedTimeTrained || 0), 0) / count,
-//     status: simulations.value.every((s) => s.status === 'stopped')
-//       ? 'stopped'
-//       : simulations.value.every((s) => s.status === 'training')
-//         ? 'training'
-//         : simulations.value.every((s) => s.status === 'testing')
-//           ? 'testing'
-//           : 'mixed',
-//   }
-// })
+const trainingMetrics = computed<TrainingMetrics>(() => {
+  const targets = targetSimulations.value
+  const selected = currentSimulation.value
+  const mode: TrainingMode = targets.some((simulation) => simulation.status === 'training')
+    ? 'training'
+    : targets.some((simulation) => simulation.status === 'testing')
+      ? 'evaluation'
+      : 'paused'
+  const currentRewards = targets.map((simulation) => simulation.reward ?? 0)
+  return {
+    episodes: selected
+      ? selected.episodes
+      : targets.reduce((sum, simulation) => sum + simulation.episodes, 0),
+    currentResult:
+      currentRewards.length > 0
+        ? currentRewards.reduce((sum, reward) => sum + reward, 0) / currentRewards.length
+        : 0,
+    bestResult:
+      targets.length > 0 ? Math.max(...targets.map((simulation) => simulation.bestReward ?? 0)) : 0,
+    history: selected?.rewardHistory ?? aggregateRewardHistory.value,
+    mode,
+    stepsPerFrame: tickRate.value,
+  }
+})
 </script>
 
 <template>
@@ -169,10 +184,8 @@ const isAllTraining = computed(
       </div>
     </div>
     <snake-panel
+      :metrics="trainingMetrics"
       :simulation="currentSimulation ?? null"
-      :reward-history="currentSimulation?.rewardHistory ?? []"
-      :episode="episodes"
-      v-model:speed="tickRate"
       @update:speed="setTickRate"
     />
   </main>

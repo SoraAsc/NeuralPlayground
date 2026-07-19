@@ -5,12 +5,11 @@ import SimulationPanel from '@/features/unity/ui/SimulationPanel.vue'
 import type { SimulationI } from '../use-neural-snake'
 import ParamSlider from '@/features/game/ui/ParamSlider.vue'
 import { Globe } from '@lucide/vue'
+import type { TrainingMetrics } from '@/features/game/model/training-metrics'
 
 const props = defineProps<{
+  metrics: TrainingMetrics
   simulation?: SimulationI | null
-  rewardHistory?: number[]
-  episode: number
-  speed: number
 }>()
 
 const emit = defineEmits<{
@@ -20,15 +19,24 @@ const emit = defineEmits<{
 const statRows = computed<StatRow[]>(() => {
   const s = props.simulation
   return [
-    { label: 'Episódio', value: props.episode, format: 'int' },
-    { label: 'Recompensa atual', value: s?.reward ?? 0, format: 'float' },
-    { label: 'Melhor recompensa', value: s?.bestReward ?? 0, format: 'float' },
+    { label: 'Episódios', value: props.metrics.episodes, format: 'int' },
+    { label: 'Recompensa atual', value: props.metrics.currentResult, format: 'float' },
+    { label: 'Melhor recompensa', value: props.metrics.bestResult, format: 'float' },
     { label: 'Tamanho atual', value: s?.bodySize ?? 0, format: 'int' },
     { label: 'Melhor tamanho', value: s?.bestBodySize ?? 0, format: 'int' },
     { label: 'Tempo real', value: s?.realTimeTrained ?? 0, format: 'time' },
     { label: 'Tempo acelerado', value: s?.acceleratedTimeTrained ?? 0, format: 'time' },
   ]
 })
+
+const panelSimulation = computed(() => ({
+  status:
+    props.metrics.mode === 'training'
+      ? ('training' as const)
+      : props.metrics.mode === 'evaluation'
+        ? ('testing' as const)
+        : ('stopped' as const),
+}))
 
 const infoSections: InfoSection[] = [
   {
@@ -127,9 +135,9 @@ const infoSections: InfoSection[] = [
 
 <template>
   <simulation-panel
-    :simulation="simulation"
+    :simulation="panelSimulation"
     :stat-rows="statRows"
-    :reward-history="rewardHistory"
+    :reward-history="metrics.history"
     chart-label="Recompensa por episódio"
     :info-sections="infoSections"
     default-tab="stats"
@@ -150,7 +158,7 @@ const infoSections: InfoSection[] = [
           <param-slider
             label="Velocidade"
             description="Tick rate de todas as simulações"
-            :model-value="speed"
+            :model-value="metrics.stepsPerFrame"
             :min="1"
             :max="8000"
             :step="1"
