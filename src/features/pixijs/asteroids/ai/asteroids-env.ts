@@ -225,6 +225,7 @@ export class AsteroidsPPOEnvironment {
   private agent!: PPOAgent
   private envs: AsteroidsEnvironment[] = []
   private rolloutSteps = 0
+  private trainingEnabled = true
 
   episodes = 0
   bestReward = Number.NEGATIVE_INFINITY
@@ -325,6 +326,16 @@ export class AsteroidsPPOEnvironment {
     return this.nnw.saveCheckpoint(this.models())
   }
 
+  setTraining(training: boolean) {
+    this.trainingEnabled = training
+    this.agent.training = training
+    this.rolloutSteps = 0
+  }
+
+  get training() {
+    return this.trainingEnabled
+  }
+
   importCheckpoint(buffer: ArrayBuffer) {
     this.agent?.dispose()
     this.nnw.loadCheckpoint(buffer, this.models())
@@ -356,6 +367,7 @@ export class AsteroidsPPOEnvironment {
       maxGradNorm: 0.5,
       epochs: 4,
     })
+    this.agent.training = this.trainingEnabled
   }
 
   private createEnvironment(index: number): AsteroidsEnvironment {

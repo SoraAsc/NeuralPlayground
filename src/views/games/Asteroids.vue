@@ -19,6 +19,7 @@ const container = ref<HTMLDivElement | null>(null)
 const checkpointInput = ref<HTMLInputElement | null>(null)
 const ready = ref(false)
 const paused = ref(false)
+const training = ref(true)
 const debugMode = ref(false)
 const speed = ref(1)
 const viewMode = ref<'all' | 'best' | number>('best')
@@ -63,7 +64,7 @@ const trainingMetrics = computed<TrainingMetrics>(() => ({
   currentResult: metrics.score,
   bestResult: metrics.bestScore,
   history: metrics.scoreHistory,
-  mode: paused.value ? 'paused' : 'training',
+  mode: paused.value ? 'paused' : training.value ? 'training' : 'evaluation',
   stepsPerFrame: speed.value,
 }))
 
@@ -95,6 +96,15 @@ function syncMetrics() {
 
 function rotationLabel(action: number) {
   return action === 1 ? 'direita' : action === 2 ? 'esquerda' : 'parado'
+}
+
+function toggleTraining() {
+  training.value = !training.value
+  paused.value = false
+  env.setTraining(training.value)
+  checkpointStatus.value = training.value
+    ? 'Treinamento PPO retomado'
+    : 'Modo de teste: política determinística e pesos bloqueados'
 }
 
 function drawShip(g: Graphics, ship: AsteroidsSnapshot, sx: number, sy: number, alpha: number) {
@@ -426,6 +436,7 @@ onUnmounted(() => {
           <span>onda {{ metrics.wave }}</span>
           <span>reward {{ metrics.reward.toFixed(2) }}</span>
           <span>{{ metrics.survival.toFixed(1) }}s</span>
+          <span>{{ training ? 'treinando' : 'em teste' }}</span>
         </div>
       </div>
     </div>
@@ -441,6 +452,7 @@ onUnmounted(() => {
       :checkpoint-status="checkpointStatus"
       :view-label="viewLabel"
       :debug-mode="debugMode"
+      :training="training"
       :rotation-action="rotationLabel(metrics.rotationAction)"
       :propulsion-action="metrics.propulsionAction === 1"
       :shooting-action="metrics.shootingAction === 1"
@@ -451,6 +463,7 @@ onUnmounted(() => {
       @save="saveCheckpoint"
       @load="chooseCheckpoint"
       @reset="resetLearning"
+      @toggle-training="toggleTraining"
     />
     <input
       ref="checkpointInput"
