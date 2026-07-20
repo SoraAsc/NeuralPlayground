@@ -28,9 +28,7 @@ const DEFAULT_PPO_SETTINGS: PPOSettings = {
   entropyCoef: 0.005,
 }
 
-/**
- * Unique PPO Agent, shared between all the karts
- */
+/** PPO agent shared by all AI karts. */
 class SharedAgent {
   private static promise: Promise<SharedAgent> | null = null
 

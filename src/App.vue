@@ -8,5 +8,3 @@ import HeaderItem from '@/widgets/ui/HeaderItem.vue'
     <router-view />
   </div>
 </template>
-
-<!-- <style scoped></style> -->

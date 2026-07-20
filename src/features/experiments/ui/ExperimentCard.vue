@@ -39,7 +39,7 @@ withDefaults(
   >
     <router-link
       :to="href"
-      :aria-label="`Open ${title} experiment`"
+      :aria-label="`Abrir experimento ${title}`"
       class="absolute inset-0 z-0 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-foreground"
     />
     <div
@@ -303,7 +303,7 @@ withDefaults(
           :href="repositoryUrl"
           target="_blank"
           rel="noopener noreferrer"
-          :aria-label="`View ${title} source code on GitHub`"
+          :aria-label="`Ver código de ${title} no GitHub`"
           class="pointer-events-auto flex h-8 items-center gap-2 border border-border bg-background/70 px-2.5 tracking-wider text-foreground shadow-sm transition-all hover:border-foreground/40 hover:bg-foreground hover:text-background focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
         >
           <code2 class="h-3.5 w-3.5" />

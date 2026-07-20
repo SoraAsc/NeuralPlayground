@@ -1,12 +1,12 @@
 # Neural Playground
 
-An interactive reinforcement learning laboratory where neural agents learn, train, and compete in real-time environments.
+An interactive machine-learning laboratory for neural networks and reinforcement-learning agents.
 
 [Open the live playground](https://soraasc.github.io/NeuralPlayground/)
 
 ## About
 
-Neural Playground brings together a collection of visual reinforcement learning experiments in the browser. Each environment explores a different control problem, action space, and training setup while exposing live metrics and simulation controls.
+Neural Playground brings together supervised-learning demonstrations and visual reinforcement-learning environments in the browser. Each experiment exposes its model, live metrics, and training controls.
 
 The playground uses [NNW](https://github.com/SoraAsc/NNW) for neural-network and reinforcement-learning workloads. The Unity-based snake experiment is developed separately in [NeuralSnake](https://github.com/SoraAsc/NeuralSnake) and embedded here as a WebGL build.
 

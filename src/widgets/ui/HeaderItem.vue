@@ -29,7 +29,7 @@ const { theme, toggleTheme } = useTheme()
     <button
       @click="toggleTheme"
       class="p-2 text-muted-foreground hover:text-foreground transition-colors"
-      aria-label="Toggle theme"
+      :aria-label="theme === 'dark' ? 'Usar tema claro' : 'Usar tema escuro'"
     >
       <Sun v-if="theme === 'dark'" class="h-4 w-4" />
       <Moon v-else class="h-4 w-4" />

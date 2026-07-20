@@ -53,7 +53,6 @@ const checkpointInput = ref<HTMLInputElement | null>(null)
 const ppoTraining = ref(true)
 const debugMode = ref(false)
 
-// Inspection State (Manual sync for reactivity)
 const inspection = reactive({
   source: '',
   speed: 0,
@@ -233,7 +232,6 @@ async function togglePPOTraining() {
     : 'Modo de teste: política determinística e pesos bloqueados'
 }
 
-// Camera Pivot for smoothing
 const cameraPivot = { x: 0, y: 0 }
 
 function updateGameSystems(delta: number) {
@@ -250,7 +248,6 @@ function updateGameSystems(delta: number) {
 
   renderSystem()
 
-  // Sync Inspection Data
   if (activeKart.value) {
     const input = activeKart.value.get(Input)
     const vel = activeKart.value.get(Velocity)
@@ -283,13 +280,11 @@ function updateGameSystems(delta: number) {
     inspection.rearSensors = sensors?.rearDistances ?? []
   }
 
-  // Camera Logic
   if (cameraMode.value === 'follow' && activeKart.value) {
     if (activeKart.value.has(Transform)) {
       const transform = activeKart.value.get(Transform)
       if (transform) {
-        // Smooth camera using lerp
-        const lerpFactor = 0.1 // Adjust for more/less "laziness"
+        const lerpFactor = 0.1
         cameraPivot.x += (transform.x - cameraPivot.x) * lerpFactor
         cameraPivot.y += (transform.y - cameraPivot.y) * lerpFactor
 
@@ -311,11 +306,8 @@ onMounted(async () => {
   if (gameContainer.value) {
     await initPixi(gameContainer.value)
 
-    // 1. Generate Track
     trackRenderer = new TrackRenderer(pixiApp.stage)
 
-    // 3. Setup Systems
-    // 3. Spawn karts
     const playerKart = await spawnKart(0, 0, 0, 'sport', 'manual')
     const botKart = await spawnKart(0, 0, 0, 'compact', 'ai')
     const botKart2 = await spawnKart(0, 0, 0, 'sport', 'ai')
@@ -325,10 +317,7 @@ onMounted(async () => {
       ? 'Modelo publicado carregado automaticamente'
       : 'Nenhum modelo publicado encontrado; treinando do zero'
 
-    // 5. Start the Game Loop
     stopGameLoop = startGameLoop(updateGameSystems)
-
-    console.log('Game Started!')
   }
 })
 

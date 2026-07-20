@@ -40,7 +40,7 @@ Tracks are generated from control nodes and converted into a center line, bounda
 
 ## Directory structure
 
-- `ai/neural-env.ts` owns the shared NNW actor, critic, PPO agent, rollout buffer, checkpoint import/export, and training settings.
+- `ai/neural-env.ts` manages the shared NNW actor, critic, PPO agent, rollout buffer, checkpoints, and training settings.
 - `ai/system.ts` builds observations, shapes rewards, batches environments, and applies policy actions.
 - `kart/` defines ECS traits, kart variants, movement, rendering, and entity creation.
 - `track/generators/` contains procedural layout generators.

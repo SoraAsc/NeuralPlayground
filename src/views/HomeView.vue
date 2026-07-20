@@ -116,21 +116,23 @@ const experiments = [
     <section class="grid gap-10 border-b border-border pb-12 md:grid-cols-[1fr_auto] md:items-end">
       <div class="max-w-3xl">
         <p class="mb-4 font-mono text-[10px] uppercase tracking-[0.24em] text-muted-foreground">
-          Reinforcement learning laboratory
+          Machine learning laboratory
         </p>
         <h1
           class="max-w-2xl text-4xl font-semibold leading-[1.08] tracking-tight text-foreground md:text-6xl"
         >
-          Aprendizado por reforço, em movimento.
+          Aprendizado de máquina, em movimento.
         </h1>
         <p class="mt-5 max-w-2xl text-base leading-relaxed text-muted-foreground md:text-lg">
-          Treine, observe e compare agentes neurais em ambientes interativos. Cada experimento
-          explora um problema, um espaço de ações e uma dinâmica diferente.
+          Treine, observe e compare modelos em experiências interativas de redes neurais e
+          aprendizado por reforço.
         </p>
       </div>
       <dl class="grid grid-cols-3 divide-x divide-border border border-border bg-card">
         <div class="min-w-24 px-4 py-3">
-          <dt class="font-mono text-[9px] uppercase tracking-wider text-muted-foreground">Jogos</dt>
+          <dt class="font-mono text-[9px] uppercase tracking-wider text-muted-foreground">
+            Experimentos
+          </dt>
           <dd class="mt-1 text-2xl font-semibold text-foreground">09</dd>
         </div>
         <div class="min-w-24 px-4 py-3">

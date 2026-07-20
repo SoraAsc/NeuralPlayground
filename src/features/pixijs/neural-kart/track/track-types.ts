@@ -12,7 +12,7 @@ export interface TrackMask {
   width: number
   height: number
   data: Uint8Array
-  scale: number // Pixels per unit if needed, or mapping logic
+  scale: number // World units represented by one mask cell
 }
 
 export interface StartLine {

@@ -1,13 +1,4 @@
-import NeuralKart from '@/views/games/NeuralKart.vue'
-import NeuralSnake from '@/views/games/NeuralSnake.vue'
-import InvertedPendulum from '@/views/games/InvertedPendulum.vue'
-import NeuralFlappy from '@/views/games/NeuralFlappy.vue'
-import Asteroids from '@/views/games/Asteroids.vue'
-import NeuralPong from '@/views/games/NeuralPong.vue'
 import HomeView from '@/views/HomeView.vue'
-import NeuralNetworkLab from '@/views/NeuralNetworkLab.vue'
-import ColorPredictor from '@/views/ColorPredictor.vue'
-import ShapeClassifier from '@/views/ShapeClassifier.vue'
 import { createRouter, createWebHashHistory } from 'vue-router'
 
 const router = createRouter({
@@ -21,47 +12,47 @@ const router = createRouter({
     {
       path: '/lab/neural-network',
       name: 'Neural Network Lab',
-      component: NeuralNetworkLab,
+      component: () => import('@/views/NeuralNetworkLab.vue'),
     },
     {
       path: '/lab/color-predictor',
       name: 'Color Predictor',
-      component: ColorPredictor,
+      component: () => import('@/views/ColorPredictor.vue'),
     },
     {
       path: '/lab/shape-classifier',
       name: 'Shape Classifier',
-      component: ShapeClassifier,
+      component: () => import('@/views/ShapeClassifier.vue'),
     },
     {
       path: '/game/neural-snake',
       name: 'Neural Snake',
-      component: NeuralSnake,
+      component: () => import('@/views/games/NeuralSnake.vue'),
     },
     {
       path: '/game/neural-kart',
       name: 'Neural Kart',
-      component: NeuralKart,
+      component: () => import('@/views/games/NeuralKart.vue'),
     },
     {
       path: '/game/inverted-pendulum',
       name: 'Inverted Pendulum',
-      component: InvertedPendulum,
+      component: () => import('@/views/games/InvertedPendulum.vue'),
     },
     {
       path: '/game/neural-flappy',
       name: 'Neural Flappy',
-      component: NeuralFlappy,
+      component: () => import('@/views/games/NeuralFlappy.vue'),
     },
     {
       path: '/game/neural-pong',
       name: 'Neural Pong',
-      component: NeuralPong,
+      component: () => import('@/views/games/NeuralPong.vue'),
     },
     {
       path: '/game/asteroids',
       name: 'Asteroids',
-      component: Asteroids,
+      component: () => import('@/views/games/Asteroids.vue'),
     },
   ],
 })

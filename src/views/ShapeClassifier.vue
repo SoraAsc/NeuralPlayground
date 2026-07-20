@@ -14,6 +14,7 @@ const canvas = ref<HTMLCanvasElement | null>(null)
 const ready = ref(false)
 const running = ref(false)
 const drawing = ref(false)
+const hasDrawing = ref(false)
 const epoch = ref(0)
 const loss = ref<number>()
 const accuracy = ref(0)
@@ -22,6 +23,7 @@ const prediction = ref({ shape: '—', confidence: 0, scores: [0, 0, 0] })
 const pixels = new Float32Array(SHAPE_INPUT_SIZE * SHAPE_INPUT_SIZE)
 let animationFrame = 0
 let lastPoint: { x: number; y: number } | null = null
+let themeObserver: MutationObserver | null = null
 
 function colors() {
   const style = getComputedStyle(document.documentElement)
@@ -99,6 +101,7 @@ function paint(event: PointerEvent) {
     }
   } else paintPoint(point.x, point.y)
   lastPoint = point
+  hasDrawing.value = true
   prediction.value = lab.predict(pixels)
   render()
 }
@@ -117,7 +120,8 @@ function stopDrawing() {
 
 function clearDrawing() {
   pixels.fill(0)
-  prediction.value = lab.predict(pixels)
+  hasDrawing.value = false
+  prediction.value = { shape: '—', confidence: 0, scores: [0, 0, 0] }
   render()
 }
 
@@ -127,7 +131,7 @@ function frame() {
   loss.value = losses.at(-1)
   epoch.value += losses.length
   if (epoch.value % 5 === 0) accuracy.value = lab.accuracy()
-  prediction.value = lab.predict(pixels)
+  if (hasDrawing.value) prediction.value = lab.predict(pixels)
   animationFrame = requestAnimationFrame(frame)
 }
 
@@ -144,19 +148,21 @@ function reset() {
   epoch.value = 0
   loss.value = undefined
   accuracy.value = lab.accuracy()
-  prediction.value = lab.predict(pixels)
+  if (hasDrawing.value) prediction.value = lab.predict(pixels)
 }
 
 onMounted(async () => {
   await lab.init()
-  prediction.value = lab.predict(pixels)
   accuracy.value = lab.accuracy()
   ready.value = true
   render()
+  themeObserver = new MutationObserver(render)
+  themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
 })
 
 onUnmounted(() => {
   cancelAnimationFrame(animationFrame)
+  themeObserver?.disconnect()
   lab.dispose()
 })
 </script>
