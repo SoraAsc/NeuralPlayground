@@ -11,7 +11,7 @@ withDefaults(
     title: string
     description: string
     repositoryUrl: string
-    preview: 'snake' | 'kart' | 'pendulum' | 'flappy' | 'pong' | 'asteroids'
+    preview: 'network' | 'snake' | 'kart' | 'pendulum' | 'flappy' | 'pong' | 'asteroids'
     isEnabled?: boolean
   }>(),
   { isEnabled: true },
@@ -47,7 +47,21 @@ withDefaults(
         "
       />
       <svg viewBox="0 0 320 144" class="relative h-full w-full" fill="none">
-        <g v-if="preview === 'snake'" stroke="currentColor" stroke-linecap="square">
+        <g v-if="preview === 'network'" stroke="currentColor">
+          <g opacity=".35">
+            <path
+              d="M45 37 137 52M45 37l92 41M45 107l92-55M45 107l92-29M137 52l92 20M137 78l92-6"
+            />
+            <path d="M137 52l92 44M137 78l92 18" opacity=".45" />
+          </g>
+          <circle cx="45" cy="37" r="9" fill="var(--background)" stroke-width="2" />
+          <circle cx="45" cy="107" r="9" fill="var(--background)" stroke-width="2" />
+          <circle cx="137" cy="52" r="11" fill="currentColor" fill-opacity=".13" stroke-width="2" />
+          <circle cx="137" cy="78" r="11" fill="currentColor" fill-opacity=".13" stroke-width="2" />
+          <circle cx="229" cy="72" r="13" fill="currentColor" fill-opacity=".22" stroke-width="2" />
+          <circle cx="229" cy="96" r="7" fill="currentColor" fill-opacity=".08" stroke-width="1" />
+        </g>
+        <g v-else-if="preview === 'snake'" stroke="currentColor" stroke-linecap="square">
           <path d="M68 92h62V66h54V43h48" stroke-width="12" opacity=".18" />
           <path d="M68 92h62V66h54V43h48" stroke-width="3" />
           <rect x="228" y="39" width="9" height="9" fill="currentColor" stroke="none" />

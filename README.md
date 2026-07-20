@@ -12,14 +12,15 @@ The playground uses [NNW](https://github.com/SoraAsc/NNW) for neural-network and
 
 ## Experiments
 
-| Experiment        | Algorithm  | Action space   | Engine      |
-| ----------------- | ---------- | -------------- | ----------- |
-| Neural Snake      | Q-Learning | Discrete       | Unity WebGL |
-| Neural Kart       | PPO        | Continuous     | PixiJS      |
-| Inverted Pendulum | PPO        | Continuous     | PixiJS      |
-| Neural Flappy     | PPO        | Discrete       | PixiJS      |
-| Neural Pong       | Q-Learning | Discrete       | PixiJS      |
-| Asteroids         | PPO        | Multi-discrete | PixiJS      |
+| Experiment         | Algorithm       | Action space   | Engine      |
+| ------------------ | --------------- | -------------- | ----------- |
+| Neural Snake       | Q-Learning      | Discrete       | Unity WebGL |
+| Neural Kart        | PPO             | Continuous     | PixiJS      |
+| Inverted Pendulum  | PPO             | Continuous     | PixiJS      |
+| Neural Flappy      | PPO             | Discrete       | PixiJS      |
+| Neural Pong        | Q-Learning      | Discrete       | PixiJS      |
+| Asteroids          | PPO             | Multi-discrete | PixiJS      |
+| Neural Network Lab | Backpropagation | Supervised     | Browser SVG |
 
 ## Tech stack
 

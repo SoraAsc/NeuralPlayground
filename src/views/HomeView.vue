@@ -3,6 +3,17 @@ import ExperimentCard from '@/features/experiments/ui/ExperimentCard.vue'
 
 const experiments = [
   {
+    href: '/lab/neural-network',
+    algorithm: 'Backpropagation',
+    actionSpace: 'Supervisionado',
+    engine: 'NNW · WASM',
+    title: 'Neural Network Lab',
+    repositoryUrl:
+      'https://github.com/SoraAsc/NeuralPlayground/tree/main/src/features/neural-network',
+    preview: 'network' as const,
+    description: 'Construa uma rede densa e observe como ela aprende as portas lógicas AND e XOR.',
+  },
+  {
     href: '/game/neural-snake',
     algorithm: 'Q-Learning',
     actionSpace: 'Discreto',
@@ -83,7 +94,9 @@ const experiments = [
         <p class="mb-4 font-mono text-[10px] uppercase tracking-[0.24em] text-muted-foreground">
           Reinforcement learning laboratory
         </p>
-        <h1 class="max-w-2xl text-4xl font-semibold leading-[1.08] tracking-tight text-foreground md:text-6xl">
+        <h1
+          class="max-w-2xl text-4xl font-semibold leading-[1.08] tracking-tight text-foreground md:text-6xl"
+        >
           Aprendizado por reforço, em movimento.
         </h1>
         <p class="mt-5 max-w-2xl text-base leading-relaxed text-muted-foreground md:text-lg">
@@ -94,14 +107,18 @@ const experiments = [
       <dl class="grid grid-cols-3 divide-x divide-border border border-border bg-card">
         <div class="min-w-24 px-4 py-3">
           <dt class="font-mono text-[9px] uppercase tracking-wider text-muted-foreground">Jogos</dt>
-          <dd class="mt-1 text-2xl font-semibold text-foreground">06</dd>
+          <dd class="mt-1 text-2xl font-semibold text-foreground">07</dd>
         </div>
         <div class="min-w-24 px-4 py-3">
-          <dt class="font-mono text-[9px] uppercase tracking-wider text-muted-foreground">Algoritmos</dt>
-          <dd class="mt-1 text-2xl font-semibold text-foreground">02</dd>
+          <dt class="font-mono text-[9px] uppercase tracking-wider text-muted-foreground">
+            Algoritmos
+          </dt>
+          <dd class="mt-1 text-2xl font-semibold text-foreground">03</dd>
         </div>
         <div class="min-w-24 px-4 py-3">
-          <dt class="font-mono text-[9px] uppercase tracking-wider text-muted-foreground">Motores</dt>
+          <dt class="font-mono text-[9px] uppercase tracking-wider text-muted-foreground">
+            Motores
+          </dt>
           <dd class="mt-1 text-2xl font-semibold text-foreground">02</dd>
         </div>
       </dl>
@@ -120,7 +137,11 @@ const experiments = [
         </span>
       </div>
       <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <experiment-card v-for="experiment in experiments" :key="experiment.href" v-bind="experiment" />
+        <experiment-card
+          v-for="experiment in experiments"
+          :key="experiment.href"
+          v-bind="experiment"
+        />
       </div>
     </section>
   </main>
