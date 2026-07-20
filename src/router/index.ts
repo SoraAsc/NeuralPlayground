@@ -6,6 +6,7 @@ import Asteroids from '@/views/games/Asteroids.vue'
 import NeuralPong from '@/views/games/NeuralPong.vue'
 import HomeView from '@/views/HomeView.vue'
 import NeuralNetworkLab from '@/views/NeuralNetworkLab.vue'
+import ColorPredictor from '@/views/ColorPredictor.vue'
 import { createRouter, createWebHashHistory } from 'vue-router'
 
 const router = createRouter({
@@ -20,6 +21,11 @@ const router = createRouter({
       path: '/lab/neural-network',
       name: 'Neural Network Lab',
       component: NeuralNetworkLab,
+    },
+    {
+      path: '/lab/color-predictor',
+      name: 'Color Predictor',
+      component: ColorPredictor,
     },
     {
       path: '/game/neural-snake',
