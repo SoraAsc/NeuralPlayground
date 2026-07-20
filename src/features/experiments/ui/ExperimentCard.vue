@@ -11,7 +11,16 @@ withDefaults(
     title: string
     description: string
     repositoryUrl: string
-    preview: 'network' | 'color' | 'snake' | 'kart' | 'pendulum' | 'flappy' | 'pong' | 'asteroids'
+    preview:
+      | 'network'
+      | 'color'
+      | 'shape'
+      | 'snake'
+      | 'kart'
+      | 'pendulum'
+      | 'flappy'
+      | 'pong'
+      | 'asteroids'
     isEnabled?: boolean
   }>(),
   { isEnabled: true },
@@ -50,7 +59,15 @@ withDefaults(
         <g v-if="preview === 'network'" stroke="currentColor">
           <path d="M70 72h51m34 0h66" opacity=".25" stroke-dasharray="3 5" />
           <circle cx="61" cy="72" r="9" fill="var(--background)" stroke-width="2" />
-          <rect x="121" y="48" width="34" height="48" fill="currentColor" fill-opacity=".1" stroke-width="2" />
+          <rect
+            x="121"
+            y="48"
+            width="34"
+            height="48"
+            fill="currentColor"
+            fill-opacity=".1"
+            stroke-width="2"
+          />
           <circle cx="232" cy="72" r="13" fill="currentColor" fill-opacity=".2" stroke-width="2" />
           <path d="m128 79 7-11 6 8 7-17" opacity=".6" />
         </g>
@@ -58,9 +75,20 @@ withDefaults(
           <rect x="39" y="31" width="76" height="82" rx="3" fill="#eab308" />
           <rect x="122" y="31" width="76" height="82" rx="3" fill="#2563eb" />
           <rect x="205" y="31" width="76" height="82" rx="3" fill="#18181b" />
-          <text x="77" y="79" text-anchor="middle" fill="#111" font-size="18" font-weight="600">Aa</text>
-          <text x="160" y="79" text-anchor="middle" fill="#fff" font-size="18" font-weight="600">Aa</text>
-          <text x="243" y="79" text-anchor="middle" fill="#fff" font-size="18" font-weight="600">Aa</text>
+          <text x="77" y="79" text-anchor="middle" fill="#111" font-size="18" font-weight="600">
+            Aa
+          </text>
+          <text x="160" y="79" text-anchor="middle" fill="#fff" font-size="18" font-weight="600">
+            Aa
+          </text>
+          <text x="243" y="79" text-anchor="middle" fill="#fff" font-size="18" font-weight="600">
+            Aa
+          </text>
+        </g>
+        <g v-else-if="preview === 'shape'" stroke="currentColor" stroke-width="3">
+          <circle cx="73" cy="72" r="25" fill="currentColor" fill-opacity=".05" />
+          <rect x="135" y="47" width="50" height="50" fill="currentColor" fill-opacity=".1" />
+          <path d="m247 45 29 52h-58Z" fill="currentColor" fill-opacity=".16" />
         </g>
         <g v-else-if="preview === 'snake'" stroke="currentColor" stroke-linecap="square">
           <path d="M68 92h62V66h54V43h48" stroke-width="12" opacity=".18" />

@@ -7,6 +7,7 @@ import NeuralPong from '@/views/games/NeuralPong.vue'
 import HomeView from '@/views/HomeView.vue'
 import NeuralNetworkLab from '@/views/NeuralNetworkLab.vue'
 import ColorPredictor from '@/views/ColorPredictor.vue'
+import ShapeClassifier from '@/views/ShapeClassifier.vue'
 import { createRouter, createWebHashHistory } from 'vue-router'
 
 const router = createRouter({
@@ -26,6 +27,11 @@ const router = createRouter({
       path: '/lab/color-predictor',
       name: 'Color Predictor',
       component: ColorPredictor,
+    },
+    {
+      path: '/lab/shape-classifier',
+      name: 'Shape Classifier',
+      component: ShapeClassifier,
     },
     {
       path: '/game/neural-snake',

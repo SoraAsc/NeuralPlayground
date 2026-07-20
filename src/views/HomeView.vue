@@ -26,6 +26,18 @@ const experiments = [
       'Uma rede aprende a reconhecer preto, branco, cinza e oito famílias cromáticas a partir do RGB.',
   },
   {
+    href: '/lab/shape-classifier',
+    algorithm: 'Backpropagation',
+    actionSpace: 'Visão 16×16',
+    engine: 'NNW · Canvas',
+    title: 'Classificador de Formas',
+    repositoryUrl:
+      'https://github.com/SoraAsc/NeuralPlayground/tree/main/src/features/neural-network',
+    preview: 'shape' as const,
+    description:
+      'Desenhe no canvas e acompanhe uma rede reconhecer círculos, quadrados e triângulos.',
+  },
+  {
     href: '/game/neural-snake',
     algorithm: 'Q-Learning',
     actionSpace: 'Discreto',
@@ -119,7 +131,7 @@ const experiments = [
       <dl class="grid grid-cols-3 divide-x divide-border border border-border bg-card">
         <div class="min-w-24 px-4 py-3">
           <dt class="font-mono text-[9px] uppercase tracking-wider text-muted-foreground">Jogos</dt>
-          <dd class="mt-1 text-2xl font-semibold text-foreground">08</dd>
+          <dd class="mt-1 text-2xl font-semibold text-foreground">09</dd>
         </div>
         <div class="min-w-24 px-4 py-3">
           <dt class="font-mono text-[9px] uppercase tracking-wider text-muted-foreground">
