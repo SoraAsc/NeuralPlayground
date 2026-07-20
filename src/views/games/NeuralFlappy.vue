@@ -97,7 +97,11 @@ function syncMetrics() {
   metrics.score = leader.score
   metrics.bestScore = env.bestScore
   metrics.survival = leader.survival
-  metrics.scoreHistory = env.scoreHistory
+  if (
+    metrics.scoreHistory.length !== env.scoreHistory.length ||
+    metrics.scoreHistory.at(-1) !== env.scoreHistory.at(-1)
+  )
+    metrics.scoreHistory = [...env.scoreHistory]
   const debug = env.debugState(leader)
   metrics.action = debug.action
   metrics.birdVelocity = debug.velocity

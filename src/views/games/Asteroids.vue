@@ -84,7 +84,11 @@ function syncMetrics() {
   metrics.survival = ship.survival
   metrics.wave = ship.wave
   metrics.bestWave = env.bestWave
-  metrics.scoreHistory = env.scoreHistory
+  if (
+    metrics.scoreHistory.length !== env.scoreHistory.length ||
+    metrics.scoreHistory.at(-1) !== env.scoreHistory.at(-1)
+  )
+    metrics.scoreHistory = [...env.scoreHistory]
   metrics.rotationAction = ship.rotationAction
   metrics.propulsionAction = ship.propulsionAction
   metrics.shootingAction = ship.shootingAction

@@ -63,7 +63,11 @@ function syncMetrics() {
   metrics.stability = env.stability
   metrics.bestStability = env.bestStability
   metrics.episodes = env.episodes
-  metrics.stabilityHistory = env.stabilityHistory
+  if (
+    metrics.stabilityHistory.length !== env.stabilityHistory.length ||
+    metrics.stabilityHistory.at(-1) !== env.stabilityHistory.at(-1)
+  )
+    metrics.stabilityHistory = [...env.stabilityHistory]
 }
 
 function renderScene() {

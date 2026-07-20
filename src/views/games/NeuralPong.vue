@@ -80,7 +80,14 @@ let tick: ((ticker: Ticker) => void) | null = null
 
 function syncMetrics() {
   if (!environment) return
-  Object.assign(metrics, environment.snapshot())
+  const snapshot = environment.snapshot()
+  const historyChanged =
+    metrics.rallyHistory.length !== snapshot.rallyHistory.length ||
+    metrics.rallyHistory.at(-1) !== snapshot.rallyHistory.at(-1)
+  Object.assign(metrics, {
+    ...snapshot,
+    rallyHistory: historyChanged ? [...snapshot.rallyHistory] : metrics.rallyHistory,
+  })
   if (debugMode.value) Object.assign(diagnostics, environment.diagnostics())
 }
 

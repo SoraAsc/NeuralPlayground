@@ -269,7 +269,12 @@ function updateGameSystems(delta: number) {
     inspection.lastReward = ai?.env?.lastEpisodeReward ?? 0
     inspection.bestReward = Number.isFinite(ai?.env?.bestReward) ? (ai?.env?.bestReward ?? 0) : 0
     inspection.bestLaps = ai?.env?.bestLaps ?? 0
-    inspection.rewardHistory = ai?.env?.rewardHistory ?? []
+    const rewardHistory = ai?.env?.rewardHistory ?? []
+    if (
+      inspection.rewardHistory.length !== rewardHistory.length ||
+      inspection.rewardHistory.at(-1) !== rewardHistory.at(-1)
+    )
+      inspection.rewardHistory = [...rewardHistory]
     inspection.policyInputs = ai?.env?.inputs ?? []
     inspection.policyOutputs = ai?.env?.outputs ?? []
     inspection.appliedForward = input?.forward ?? 0
