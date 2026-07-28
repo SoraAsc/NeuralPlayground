@@ -309,9 +309,9 @@ onMounted(async () => {
     trackRenderer = new TrackRenderer(pixiApp.stage)
 
     const playerKart = await spawnKart(0, 0, 0, 'sport', 'manual')
-    const botKart = await spawnKart(0, 0, 0, 'compact', 'ai')
-    const botKart2 = await spawnKart(0, 0, 0, 'sport', 'ai')
-    karts.value = [playerKart, botKart, botKart2]
+    const botKart = await spawnKart(0, 0, 0, 'sport', 'ai')
+    const botKart2 = await spawnKart(0, 0, 0, 'compact', 'ai')
+    karts.value = [botKart, playerKart, botKart2]
     configureTrack()
     checkpointStatus.value = (await NeuralKartEnvironment.wasPublishedCheckpointLoaded())
       ? 'Modelo publicado carregado automaticamente'
