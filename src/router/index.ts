@@ -20,11 +20,6 @@ const router = createRouter({
       component: () => import('@/views/ColorPredictor.vue'),
     },
     {
-      path: '/lab/shape-classifier',
-      name: 'Shape Classifier',
-      component: () => import('@/views/ShapeClassifier.vue'),
-    },
-    {
       path: '/game/neural-snake',
       name: 'Neural Snake',
       component: () => import('@/views/games/NeuralSnake.vue'),

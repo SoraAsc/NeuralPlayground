@@ -14,7 +14,6 @@ withDefaults(
     preview:
       | 'network'
       | 'color'
-      | 'shape'
       | 'snake'
       | 'kart'
       | 'pendulum'
@@ -84,11 +83,6 @@ withDefaults(
           <text x="243" y="79" text-anchor="middle" fill="#fff" font-size="18" font-weight="600">
             Aa
           </text>
-        </g>
-        <g v-else-if="preview === 'shape'" stroke="currentColor" stroke-width="3">
-          <circle cx="73" cy="72" r="25" fill="currentColor" fill-opacity=".05" />
-          <rect x="135" y="47" width="50" height="50" fill="currentColor" fill-opacity=".1" />
-          <path d="m247 45 29 52h-58Z" fill="currentColor" fill-opacity=".16" />
         </g>
         <g v-else-if="preview === 'snake'" stroke="currentColor" stroke-linecap="square">
           <path d="M68 92h62V66h54V43h48" stroke-width="12" opacity=".18" />

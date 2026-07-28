@@ -28,12 +28,6 @@ The network architecture is:
 
 Colors can be selected with the picker or generated at random. The page shows the predicted family, score, expected family, and a fixed validation palette.
 
-## Shape Classifier
-
-The shape classifier recognizes circles, squares, and triangles drawn on a `16 × 16` canvas. Its synthetic dataset has 160 variants of each shape, with changes in position, scale, stroke thickness, and rotation.
-
-Each image is flattened into 256 input values. Two ReLU layers with 32 and 16 units feed three sigmoid outputs. Predictions update as the user draws.
-
 ## Training
 
 All three labs use AdamW with shuffled mini-batches. Training is split across animation frames so the UI and predictions can update between batches. Models and trainers are disposed on reset and when their views unmount.
@@ -42,9 +36,7 @@ All three labs use AdamW with shuffled mini-batches. Training is split across an
 
 - `model/logic-gate-lab.ts` defines the AND/XOR datasets, configurable dense model, training loop, predictions, and decision-grid evaluation.
 - `model/color-predictor.ts` generates the RGB dataset, assigns color-family labels, calculates luminance, and manages the color model.
-- `model/shape-classifier.ts` generates rasterized shape variants and manages the shape model.
 - `ui/DecisionBoundary.vue` renders the logic gate's probability surface and labeled samples.
 - `ui/NeuralNetworkPanel.vue` exposes the logic model architecture and training parameters.
 - `../../views/NeuralNetworkLab.vue` hosts the interactive AND/XOR experiment.
 - `../../views/ColorPredictor.vue` hosts the color-classification experiment.
-- `../../views/ShapeClassifier.vue` hosts the drawing-classification experiment.
