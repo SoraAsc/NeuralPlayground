@@ -37,11 +37,13 @@ import {
 import { Progress } from '@/features/pixijs/neural-kart/track/track-checkpoints'
 import KartPanel from '@/features/pixijs/neural-kart/ui/KartPanel.vue'
 import BaseButton from '@/features/experiments/ui/BaseButton.vue'
-import { Brain, Camera, Focus, ScanLine } from '@lucide/vue'
+import { Brain, Camera, Focus, Maximize2, Minimize2, ScanLine } from '@lucide/vue'
 import type { TrackGenerator } from '@/features/pixijs/neural-kart/track'
 import type { TrainingMetrics } from '@/features/game/model/training-metrics'
 
 const gameContainer = ref<HTMLDivElement | null>(null)
+const cinematicStage = ref<HTMLDivElement | null>(null)
+const isFullscreen = ref(false)
 const cameraMode = ref<'full' | 'follow'>('follow')
 const karts = ref<Entity[]>([])
 const selectedKartIndex = ref(0)
@@ -166,6 +168,32 @@ function toggleDiagnostics() {
   syncDiagnosticSensors()
 }
 
+async function toggleFullscreen() {
+  try {
+    if (document.fullscreenElement) await document.exitFullscreen()
+    else await cinematicStage.value?.requestFullscreen()
+  } catch {
+    checkpointStatus.value = 'O navegador não permitiu abrir a tela cheia'
+  }
+}
+
+function syncFullscreenState() {
+  isFullscreen.value = document.fullscreenElement === cinematicStage.value
+  requestAnimationFrame(() => pixiApp.resize())
+}
+
+const checkpointProgress = computed(() =>
+  Math.max(0, Math.min(100, (inspection.time / Math.max(inspection.maxTime, 0.01)) * 100)),
+)
+
+const speedPercent = computed(() => Math.max(0, Math.min(100, inspection.speed * 3.5)))
+
+const steeringLabel = computed(() => {
+  if (inspection.appliedSteer < -0.15) return 'ESQUERDA'
+  if (inspection.appliedSteer > 0.15) return 'DIREITA'
+  return 'CENTRO'
+})
+
 const handleKeyDown = (e: KeyboardEvent) => {
   setKartInputKey(e.key, true)
   if (e.key.toLowerCase() === 'c') {
@@ -176,6 +204,7 @@ const handleKeyDown = (e: KeyboardEvent) => {
     nextKart()
   }
   if (e.key.toLowerCase() === 'k') toggleDiagnostics()
+  if (e.key.toLowerCase() === 'f') toggleFullscreen()
 }
 
 const handleKeyUp = (e: KeyboardEvent) => {
@@ -303,6 +332,7 @@ function updateGameSystems(delta: number) {
 onMounted(async () => {
   window.addEventListener('keydown', handleKeyDown)
   window.addEventListener('keyup', handleKeyUp)
+  document.addEventListener('fullscreenchange', syncFullscreenState)
   if (gameContainer.value) {
     await initPixi(gameContainer.value)
 
@@ -324,6 +354,7 @@ onMounted(async () => {
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeyDown)
   window.removeEventListener('keyup', handleKeyUp)
+  document.removeEventListener('fullscreenchange', syncFullscreenState)
   resetKartInputKeys()
   stopGameLoop?.()
   stopGameLoop = null
@@ -348,12 +379,113 @@ onUnmounted(() => {
           Kart {{ selectedKartIndex + 1 }}
         </base-button>
         <span class="ml-auto whitespace-nowrap text-[10px] text-muted-foreground/60">
-          C troca câmera · Tab troca kart · K exibe sensores
+          C troca câmera · Tab troca kart · K sensores · F tela cheia
         </span>
       </div>
 
-      <div class="group relative h-[60vh] overflow-hidden bg-[#111]">
+      <div
+        ref="cinematicStage"
+        class="cinematic-stage group relative h-[60vh] overflow-hidden bg-[#080b0d]"
+        :class="{ 'is-cinematic': isFullscreen }"
+      >
         <div ref="gameContainer" class="h-full w-full" />
+
+        <div v-if="isFullscreen" class="cinematic-vignette pointer-events-none absolute inset-0" />
+
+        <div
+          v-if="isFullscreen"
+          class="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between p-8 text-white"
+        >
+          <div>
+            <p class="hud-kicker">NEURAL PLAYGROUND / LIVE</p>
+            <h2 class="mt-1 text-2xl font-semibold tracking-tight">NEURAL KART</h2>
+            <div
+              class="mt-3 flex items-center gap-2 text-[11px] font-medium tracking-wider text-white/60"
+            >
+              <span class="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
+              PPO {{ ppoTraining ? 'APRENDENDO' : 'EM AVALIAÇÃO' }}
+              <span class="text-white/25">/</span>
+              {{ trackType.toUpperCase() }}
+            </div>
+          </div>
+          <div class="text-right">
+            <p class="hud-kicker">MELHOR RESULTADO</p>
+            <p class="mt-1 font-mono text-3xl font-light tabular-nums">
+              {{ inspection.bestReward.toFixed(1) }}
+            </p>
+            <p class="mt-1 text-[10px] tracking-widest text-white/45">
+              {{ inspection.episodes }} EPISÓDIOS · {{ inspection.bestLaps }} VOLTAS RECORDE
+            </p>
+          </div>
+        </div>
+
+        <div
+          v-if="isFullscreen"
+          class="cinematic-hud-bottom pointer-events-none absolute inset-x-0 bottom-0 grid grid-cols-[1fr_auto_1fr] items-end gap-10 p-8 text-white"
+        >
+          <div class="max-w-sm">
+            <div class="mb-2 flex items-end justify-between">
+              <div>
+                <p class="hud-kicker">TELEMETRIA</p>
+                <p class="mt-1 font-mono text-4xl font-light tabular-nums">
+                  {{ inspection.speed.toFixed(0)
+                  }}<span class="ml-1 text-sm text-white/45">U/S</span>
+                </p>
+              </div>
+              <p class="font-mono text-xs text-white/55">{{ timeMultiplier }}× SIM</p>
+            </div>
+            <div class="h-1 overflow-hidden bg-white/15">
+              <div
+                class="h-full bg-amber-300 transition-[width] duration-150"
+                :style="{ width: `${speedPercent}%` }"
+              />
+            </div>
+          </div>
+
+          <div class="flex items-center gap-8 border-x border-white/15 px-10 text-center">
+            <div>
+              <p class="hud-kicker">VOLTA</p>
+              <p class="mt-1 font-mono text-3xl tabular-nums">{{ inspection.laps }}</p>
+            </div>
+            <div>
+              <p class="hud-kicker">CHECKPOINT</p>
+              <p class="mt-1 font-mono text-3xl tabular-nums">{{ inspection.cp + 1 }}</p>
+            </div>
+            <div>
+              <p class="hud-kicker">RECOMPENSA</p>
+              <p class="mt-1 font-mono text-3xl tabular-nums">{{ inspection.reward.toFixed(1) }}</p>
+            </div>
+          </div>
+
+          <div class="ml-auto w-full max-w-sm">
+            <div class="mb-2 flex items-end justify-between">
+              <div>
+                <p class="hud-kicker">DECISÃO DA REDE</p>
+                <p class="mt-1 text-sm font-medium tracking-wider">{{ steeringLabel }}</p>
+              </div>
+              <p class="font-mono text-xs text-white/55">
+                ACEL {{ inspection.appliedForward >= 0 ? '+' : ''
+                }}{{ inspection.appliedForward.toFixed(2) }}
+              </p>
+            </div>
+            <div class="relative h-1 bg-white/15">
+              <span class="absolute left-1/2 top-[-3px] h-[7px] w-px bg-white/50" />
+              <span
+                class="absolute top-[-2px] h-[5px] w-2 rounded-full bg-cyan-300 transition-[left] duration-100"
+                :style="{ left: `${50 + inspection.appliedSteer * 45}%` }"
+              />
+            </div>
+            <div class="mt-5 flex items-center gap-3">
+              <span class="hud-kicker shrink-0">JANELA CP</span>
+              <div class="h-px grow bg-white/15">
+                <div class="h-px bg-rose-400" :style="{ width: `${checkpointProgress}%` }" />
+              </div>
+              <span class="font-mono text-[10px] text-white/55"
+                >{{ inspection.time.toFixed(1) }}s</span
+              >
+            </div>
+          </div>
+        </div>
 
         <div
           class="absolute right-6 top-1/2 flex -translate-y-1/2 flex-col items-center gap-2 rounded-xl border border-border/50 bg-background/40 p-1.5 shadow-2xl backdrop-blur-md"
@@ -395,9 +527,21 @@ onUnmounted(() => {
           >
             <brain />
           </base-button>
+          <div class="my-1 h-px w-4 bg-border/50" />
+          <base-button
+            variant="outline"
+            size="icon"
+            class="rounded-lg"
+            :title="isFullscreen ? 'Sair da tela cheia' : 'Modo apresentação (F)'"
+            @click="toggleFullscreen"
+          >
+            <minimize-2 v-if="isFullscreen" />
+            <maximize-2 v-else />
+          </base-button>
         </div>
 
         <div
+          v-if="!isFullscreen"
           class="pointer-events-none absolute bottom-4 left-4 flex items-center gap-2 border border-white/10 bg-black/45 px-2.5 py-1.5 text-[10px] text-white/70 backdrop-blur-md"
         >
           <span class="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
@@ -445,3 +589,41 @@ onUnmounted(() => {
     />
   </main>
 </template>
+
+<style scoped>
+.cinematic-stage:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  background: #080b0d;
+}
+
+.cinematic-vignette {
+  background:
+    linear-gradient(
+      180deg,
+      rgb(0 0 0 / 0.68) 0%,
+      transparent 28%,
+      transparent 68%,
+      rgb(0 0 0 / 0.76) 100%
+    ),
+    radial-gradient(circle at center, transparent 48%, rgb(0 0 0 / 0.48) 100%);
+}
+
+.hud-kicker {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.24em;
+  color: rgb(255 255 255 / 0.45);
+}
+
+.is-cinematic :deep(canvas) {
+  filter: saturate(0.92) contrast(1.08);
+}
+
+@media (max-width: 900px) {
+  .cinematic-hud-bottom {
+    gap: 1rem;
+    padding: 1.25rem;
+  }
+}
+</style>

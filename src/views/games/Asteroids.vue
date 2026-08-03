@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { Graphics, type Ticker } from 'pixi.js'
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
-import { Pause, Play, RotateCcw, ScanLine } from '@lucide/vue'
+import { Maximize2, Minimize2, Pause, Play, RotateCcw, ScanLine } from '@lucide/vue'
 import BaseButton from '@/features/experiments/ui/BaseButton.vue'
+import CinematicHud from '@/features/game/ui/CinematicHud.vue'
+import { useCinematicMode } from '@/features/game/model/use-cinematic-mode'
 import AsteroidsPanel from '@/features/pixijs/asteroids/ui/AsteroidsPanel.vue'
 import {
   ASTEROIDS_WORLD,
@@ -46,6 +48,11 @@ const { theme } = useTheme()
 const env = new AsteroidsPPOEnvironment()
 let graphics: Graphics | null = null
 let tick: ((ticker: Ticker) => void) | null = null
+const {
+  stage: cinematicStage,
+  isFullscreen,
+  toggleFullscreen,
+} = useCinematicMode(() => pixiApp.resize())
 
 const palette = computed(() =>
   theme.value === 'dark'
@@ -399,8 +406,43 @@ onUnmounted(() => {
           Nave {{ index }}
         </base-button>
       </div>
-      <div class="relative h-[60vh] min-h-105 overflow-hidden bg-background">
+      <div
+        ref="cinematicStage"
+        class="cinematic-stage relative h-[60vh] min-h-105 overflow-hidden bg-background"
+      >
         <div ref="container" class="h-full w-full" />
+        <cinematic-hud
+          :active="isFullscreen"
+          title="NEURAL ASTEROIDS"
+          :status="training ? 'PPO aprendendo' : 'política em avaliação'"
+          record-label="RECORDE DE CAÇA"
+          :record-value="`${metrics.bestScore} ALVOS`"
+          :record-detail="`onda ${metrics.bestWave} · ${metrics.episodes} episódios`"
+          :stats="[
+            { label: 'ABATES', value: metrics.score },
+            { label: 'ONDA', value: metrics.wave },
+            { label: 'TEMPO', value: `${metrics.survival.toFixed(1)}s` },
+          ]"
+          insight-label="AMEAÇA PRIORITÁRIA"
+          :insight-value="
+            metrics.primaryRisk > 0.65
+              ? 'COLISÃO IMINENTE'
+              : metrics.primaryRisk > 0.25
+                ? 'ROTA EM RISCO'
+                : 'TRAJETÓRIA LIMPA'
+          "
+          :insight-detail="`aproximação ${metrics.primaryThreatTime.toFixed(2)}s · folga ${metrics.primaryThreatClearance.toFixed(0)}u`"
+          :meter="metrics.primaryRisk * 100"
+          meter-tone="red"
+        >
+          <template #reading>
+            <p class="mt-1 font-mono text-sm text-white/75">
+              {{ rotationLabel(metrics.rotationAction).toUpperCase() }} ·
+              {{ metrics.propulsionAction ? 'PROPULSÃO' : 'INÉRCIA' }} ·
+              {{ metrics.shootingAction ? 'DISPARO' : 'AGUARDANDO' }}
+            </p>
+          </template>
+        </cinematic-hud>
         <div
           class="absolute right-6 top-1/2 flex -translate-y-1/2 flex-col gap-2 rounded-xl border border-border/50 bg-background/55 p-1.5 shadow-2xl backdrop-blur-md"
         >
@@ -432,8 +474,20 @@ onUnmounted(() => {
           >
             <scan-line />
           </base-button>
+          <div class="my-1 h-px w-4 bg-border/50" />
+          <base-button
+            variant="outline"
+            size="icon"
+            class="rounded-lg"
+            title="Modo apresentação (F)"
+            @click="toggleFullscreen"
+          >
+            <minimize-2 v-if="isFullscreen" />
+            <maximize-2 v-else />
+          </base-button>
         </div>
         <div
+          v-if="!isFullscreen"
           class="pointer-events-none absolute bottom-4 left-4 flex max-w-[calc(100%-2rem)] flex-wrap gap-x-4 gap-y-1 border border-border/40 bg-background/55 px-3 py-2 font-mono text-[10px] text-foreground backdrop-blur-md"
         >
           <span>{{ viewLabel }} · {{ metrics.score }} asteroides</span>
@@ -478,3 +532,12 @@ onUnmounted(() => {
     />
   </main>
 </template>
+
+<style scoped>
+.cinematic-stage:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  min-height: 100vh;
+  background: #080b0d;
+}
+</style>

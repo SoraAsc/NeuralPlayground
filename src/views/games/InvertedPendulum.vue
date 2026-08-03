@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { Graphics, type Ticker } from 'pixi.js'
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
-import { Pause, Play, RotateCcw, ScanLine } from '@lucide/vue'
+import { Maximize2, Minimize2, Pause, Play, RotateCcw, ScanLine } from '@lucide/vue'
 import BaseButton from '@/features/experiments/ui/BaseButton.vue'
+import CinematicHud from '@/features/game/ui/CinematicHud.vue'
+import { useCinematicMode } from '@/features/game/model/use-cinematic-mode'
 import PendulumPanel from '@/features/pixijs/inverted-pendulum/ui/PendulumPanel.vue'
 import { PendulumEnvironment } from '@/features/pixijs/inverted-pendulum/ai/pendulum-env'
 import { useTheme } from '@/shared/lib/theme/useTheme'
@@ -36,6 +38,11 @@ const { theme } = useTheme()
 const env = new PendulumEnvironment()
 let graphics: Graphics | null = null
 let tick: ((ticker: Ticker) => void) | null = null
+const {
+  stage: cinematicStage,
+  isFullscreen,
+  toggleFullscreen,
+} = useCinematicMode(() => pixiApp.resize())
 
 const palette = computed(() =>
   theme.value === 'dark'
@@ -263,8 +270,35 @@ onUnmounted(() => {
         <span class="ml-auto text-[10px] text-muted-foreground/60"> CartPole-v1 </span>
       </div>
 
-      <div class="relative h-[60vh] min-h-105 overflow-hidden bg-background">
+      <div
+        ref="cinematicStage"
+        class="cinematic-stage relative h-[60vh] min-h-105 overflow-hidden bg-background"
+      >
         <div ref="container" class="h-full w-full" />
+        <cinematic-hud
+          :active="isFullscreen"
+          title="INVERTED PENDULUM"
+          :status="training ? 'equilíbrio sendo aprendido' : 'controle determinístico'"
+          record-label="MAIOR EQUILÍBRIO"
+          :record-value="`${metrics.bestStability.toFixed(1)}s`"
+          :record-detail="`${metrics.episodes} episódios · reward ${metrics.bestReward.toFixed(0)}`"
+          :stats="[
+            { label: 'ÂNGULO', value: `${((metrics.angle * 180) / Math.PI).toFixed(1)}°` },
+            { label: 'ESTÁVEL', value: `${metrics.stability.toFixed(1)}s` },
+            { label: 'POSIÇÃO', value: metrics.cartPosition.toFixed(2) },
+          ]"
+          insight-label="CORREÇÃO DA POLÍTICA"
+          :insight-value="
+            metrics.force > 0.05
+              ? 'EMPUXA PARA DIREITA'
+              : metrics.force < -0.05
+                ? 'EMPUXA PARA ESQUERDA'
+                : 'MANTÉM O CENTRO'
+          "
+          :insight-detail="`força ${metrics.force.toFixed(2)} · velocidade angular ${metrics.angularVelocity.toFixed(2)}`"
+          :meter="Math.min(100, Math.abs(metrics.angle) * 190)"
+          :meter-tone="Math.abs(metrics.angle) > 0.3 ? 'red' : 'cyan'"
+        />
 
         <div
           class="absolute right-6 top-1/2 flex -translate-y-1/2 flex-col gap-2 rounded-xl border border-border/50 bg-background/55 p-1.5 shadow-2xl backdrop-blur-md"
@@ -297,9 +331,20 @@ onUnmounted(() => {
           >
             <scan-line />
           </base-button>
+          <div class="my-1 h-px w-4 bg-border/50" />
+          <base-button
+            variant="outline"
+            size="icon"
+            class="rounded-lg"
+            title="Modo apresentação (F)"
+            @click="toggleFullscreen"
+          >
+            <minimize-2 v-if="isFullscreen" /><maximize-2 v-else />
+          </base-button>
         </div>
 
         <div
+          v-if="!isFullscreen"
           class="pointer-events-none absolute bottom-4 left-4 flex gap-4 border border-border/40 bg-background/55 px-3 py-2 font-mono text-[10px] text-foreground backdrop-blur-md"
         >
           <span>θ {{ ((metrics.angle * 180) / Math.PI).toFixed(1) }}°</span>
@@ -337,3 +382,12 @@ onUnmounted(() => {
     />
   </main>
 </template>
+
+<style scoped>
+.cinematic-stage:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  min-height: 100vh;
+  background: #080b0d;
+}
+</style>

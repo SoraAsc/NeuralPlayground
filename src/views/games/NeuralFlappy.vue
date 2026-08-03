@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { Graphics, type Ticker } from 'pixi.js'
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
-import { Pause, Play, RotateCcw, ScanLine } from '@lucide/vue'
+import { Maximize2, Minimize2, Pause, Play, RotateCcw, ScanLine } from '@lucide/vue'
 import BaseButton from '@/features/experiments/ui/BaseButton.vue'
+import CinematicHud from '@/features/game/ui/CinematicHud.vue'
+import { useCinematicMode } from '@/features/game/model/use-cinematic-mode'
 import FlappyPanel from '@/features/pixijs/flappy-bird/ui/FlappyPanel.vue'
 import { FLAPPY_WORLD, FlappyPPOEnvironment } from '@/features/pixijs/flappy-bird/ai/flappy-env'
 import { useTheme } from '@/shared/lib/theme/useTheme'
@@ -39,6 +41,11 @@ const { theme } = useTheme()
 const env = new FlappyPPOEnvironment()
 let graphics: Graphics | null = null
 let tick: ((ticker: Ticker) => void) | null = null
+const {
+  stage: cinematicStage,
+  isFullscreen,
+  toggleFullscreen,
+} = useCinematicMode(() => pixiApp.resize())
 
 const palette = computed(() =>
   theme.value === 'dark'
@@ -315,8 +322,29 @@ onUnmounted(() => {
           Bird {{ index }}
         </base-button>
       </div>
-      <div class="relative h-[60vh] min-h-105 overflow-hidden bg-background">
+      <div
+        ref="cinematicStage"
+        class="cinematic-stage relative h-[60vh] min-h-105 overflow-hidden bg-background"
+      >
         <div ref="container" class="h-full w-full" />
+        <cinematic-hud
+          :active="isFullscreen"
+          title="NEURAL FLAPPY"
+          :status="training ? 'bando em treinamento' : 'melhor política em voo'"
+          record-label="RECORDE DE PASSAGEM"
+          :record-value="`${metrics.bestScore} CANOS`"
+          :record-detail="`${metrics.episodes} episódios · ${movingPipes ? 'obstáculos móveis' : 'obstáculos fixos'}`"
+          :stats="[
+            { label: 'CANOS', value: metrics.score },
+            { label: 'VOO', value: `${metrics.survival.toFixed(1)}s` },
+            { label: 'REWARD', value: metrics.reward.toFixed(1) },
+          ]"
+          insight-label="DECISÃO DE VOO"
+          :insight-value="metrics.action === 1 ? 'BATER ASAS' : 'PLANAR'"
+          :insight-detail="`Δx ${metrics.horizontalDistance.toFixed(0)} · Δy ${metrics.verticalDistance.toFixed(0)} · vy ${metrics.birdVelocity.toFixed(1)}`"
+          :meter="Math.min(100, Math.abs(metrics.verticalDistance) / 2.5)"
+          :meter-tone="Math.abs(metrics.verticalDistance) > 150 ? 'red' : 'amber'"
+        />
         <div
           class="absolute right-6 top-1/2 flex -translate-y-1/2 flex-col gap-2 rounded-xl border border-border/50 bg-background/55 p-1.5 shadow-2xl backdrop-blur-md"
         >
@@ -348,8 +376,19 @@ onUnmounted(() => {
           >
             <scan-line />
           </base-button>
+          <div class="my-1 h-px w-4 bg-border/50" />
+          <base-button
+            variant="outline"
+            size="icon"
+            class="rounded-lg"
+            title="Modo apresentação (F)"
+            @click="toggleFullscreen"
+          >
+            <minimize-2 v-if="isFullscreen" /><maximize-2 v-else />
+          </base-button>
         </div>
         <div
+          v-if="!isFullscreen"
           class="pointer-events-none absolute bottom-4 left-4 flex gap-4 border border-border/40 bg-background/55 px-3 py-2 font-mono text-[10px] text-foreground backdrop-blur-md"
         >
           <span>{{ viewLabel }} · {{ metrics.score }} canos</span>
@@ -395,3 +434,12 @@ onUnmounted(() => {
     />
   </main>
 </template>
+
+<style scoped>
+.cinematic-stage:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  min-height: 100vh;
+  background: #080b0d;
+}
+</style>

@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { Graphics, type Ticker } from 'pixi.js'
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
-import { Pause, Play, RotateCcw, ScanLine } from '@lucide/vue'
+import { Maximize2, Minimize2, Pause, Play, RotateCcw, ScanLine } from '@lucide/vue'
 import BaseButton from '@/features/experiments/ui/BaseButton.vue'
+import CinematicHud from '@/features/game/ui/CinematicHud.vue'
+import { useCinematicMode } from '@/features/game/model/use-cinematic-mode'
 import PongPanel from '@/features/pixijs/neural-pong/PongPanel.vue'
 import {
   NeuralPongEnvironment,
@@ -77,6 +79,11 @@ const trainingMetrics = computed<TrainingMetrics>(() => ({
 let environment: NeuralPongEnvironment | null = null
 let graphics: Graphics | null = null
 let tick: ((ticker: Ticker) => void) | null = null
+const {
+  stage: cinematicStage,
+  isFullscreen,
+  toggleFullscreen,
+} = useCinematicMode(() => pixiApp.resize())
 
 function syncMetrics() {
   if (!environment) return
@@ -268,9 +275,42 @@ onUnmounted(() => {
         </span>
       </div>
 
-      <div class="relative h-[60vh] min-h-105 overflow-hidden bg-background">
+      <div
+        ref="cinematicStage"
+        class="cinematic-stage relative h-[60vh] min-h-105 overflow-hidden bg-background"
+      >
         <div ref="container" class="h-full w-full" />
+        <cinematic-hud
+          :active="isFullscreen"
+          title="NEURAL PONG / SELF-PLAY"
+          :status="
+            metrics.training
+              ? `explorando · ε ${metrics.epsilon.toFixed(3)}`
+              : 'políticas em confronto'
+          "
+          record-label="MAIOR TROCA"
+          :record-value="`${metrics.bestRally} TOQUES`"
+          :record-detail="`${metrics.episodes} partidas de experiência`"
+          :stats="[
+            { label: 'PLAYER A', value: metrics.leftScore },
+            { label: 'RALLY', value: metrics.rallies, accent: true },
+            { label: 'PLAYER B', value: metrics.rightScore },
+          ]"
+          insight-label="ESTRATÉGIA EMERGENTE"
+          :insight-value="metrics.rallies > 8 ? 'TROCA SUSTENTADA' : 'RECALCULANDO INTERCEPTAÇÃO'"
+          :insight-detail="`Q-left ${diagnostics.left.qValues.map((v) => v.toFixed(2)).join(' / ')}`"
+          :meter="Math.min(100, metrics.rallies * 5)"
+          meter-tone="amber"
+        >
+          <template #reading>
+            <p class="mt-1 font-mono text-sm text-white/75">
+              A {{ ['PARAR', 'SUBIR', 'DESCER'][diagnostics.left.action] }} · B
+              {{ ['PARAR', 'SUBIR', 'DESCER'][diagnostics.right.action] }}
+            </p>
+          </template>
+        </cinematic-hud>
         <div
+          v-if="!isFullscreen"
           class="pointer-events-none absolute left-1/2 top-7 flex -translate-x-1/2 items-center gap-6 font-mono text-4xl font-semibold tabular-nums text-foreground"
         >
           <span>{{ metrics.leftScore }}</span>
@@ -309,9 +349,20 @@ onUnmounted(() => {
           >
             <scan-line />
           </base-button>
+          <div class="my-1 h-px w-4 bg-border/50" />
+          <base-button
+            variant="outline"
+            size="icon"
+            class="rounded-lg"
+            title="Modo apresentação (F)"
+            @click="toggleFullscreen"
+          >
+            <minimize-2 v-if="isFullscreen" /><maximize-2 v-else />
+          </base-button>
         </div>
 
         <div
+          v-if="!isFullscreen"
           class="pointer-events-none absolute bottom-4 left-4 flex gap-4 border border-border/40 bg-background/55 px-3 py-2 font-mono text-[10px] text-foreground backdrop-blur-md"
         >
           <span>rally {{ metrics.rallies }}</span>
@@ -345,3 +396,12 @@ onUnmounted(() => {
     />
   </main>
 </template>
+
+<style scoped>
+.cinematic-stage:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  min-height: 100vh;
+  background: #080b0d;
+}
+</style>

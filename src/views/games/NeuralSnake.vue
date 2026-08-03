@@ -3,11 +3,14 @@ import BaseButton from '@/features/experiments/ui/BaseButton.vue'
 import SnakePanel from '@/features/unity/games/snake/ui/SnakePanel.vue'
 import { useNeuralSnake } from '@/features/unity/games/snake/use-neural-snake'
 import GameTemplate from '@/features/unity/ui/GameTemplate.vue'
-import { Plus, X, Brain, Play, RotateCcw, Pause } from '@lucide/vue'
+import CinematicHud from '@/features/game/ui/CinematicHud.vue'
+import { useCinematicMode } from '@/features/game/model/use-cinematic-mode'
+import { Plus, X, Brain, Play, RotateCcw, Pause, Maximize2, Minimize2 } from '@lucide/vue'
 import { ref, computed } from 'vue'
 import type { TrainingMetrics, TrainingMode } from '@/features/game/model/training-metrics'
 
 const game = ref<InstanceType<typeof GameTemplate> | null>(null)
+const { stage: cinematicStage, isFullscreen, toggleFullscreen } = useCinematicMode()
 const unityBaseUrl = `${import.meta.env.BASE_URL}unity`
 const {
   simulations,
@@ -130,10 +133,13 @@ const trainingMetrics = computed<TrainingMetrics>(() => {
         </base-button>
       </div>
 
-      <div class="relative group">
+      <div
+        ref="cinematicStage"
+        class="cinematic-stage relative group h-[60vh] overflow-hidden bg-[#080b0d]"
+      >
         <game-template
           ref="game"
-          class="w-full h-[60vh]"
+          class="h-full w-full"
           :loader-url="`${unityBaseUrl}/neural-snake/NeuralSnake.loader.js`"
           @ready="syncBackgroundColor"
           :config="{
@@ -145,6 +151,34 @@ const trainingMetrics = computed<TrainingMetrics>(() => {
             productVersion: '1.0',
             streamingAssetsUrl: `${unityBaseUrl}/streaming-assets`,
           }"
+        />
+        <cinematic-hud
+          :active="isFullscreen"
+          title="NEURAL SNAKE"
+          :status="
+            isTraining
+              ? 'evoluindo estratégia'
+              : isTesting
+                ? 'política em avaliação'
+                : 'simulação pausada'
+          "
+          record-label="MELHOR SERPENTE"
+          :record-value="currentSimulation?.bestBodySize ?? 0"
+          :record-detail="`${trainingMetrics.episodes} episódios · ${simulations.length} ambientes`"
+          :stats="[
+            { label: 'CORPO', value: currentSimulation?.bodySize ?? '—' },
+            { label: 'REWARD', value: (currentSimulation?.reward ?? 0).toFixed(1) },
+            { label: 'TICK RATE', value: `${tickRate}×` },
+          ]"
+          insight-label="APRENDIZADO PARALELO"
+          :insight-value="
+            currentSimulationIndex === -1
+              ? `${simulations.length} POLÍTICAS EM OBSERVAÇÃO`
+              : `SIMULAÇÃO ${(currentSimulationIndex ?? 0) + 1} EM FOCO`
+          "
+          :insight-detail="`${((currentSimulation?.acceleratedTimeTrained ?? 0) / 60).toFixed(1)} min de experiência acelerada`"
+          :meter="Math.min(100, (currentSimulation?.bodySize ?? 0) * 5)"
+          meter-tone="cyan"
         />
 
         <div
@@ -181,6 +215,16 @@ const trainingMetrics = computed<TrainingMetrics>(() => {
           >
             <rotate-ccw />
           </base-button>
+          <div class="h-px w-4 bg-border/50 my-1" />
+          <base-button
+            variant="outline"
+            size="icon"
+            class="rounded-lg"
+            title="Modo apresentação (F)"
+            @click="toggleFullscreen"
+          >
+            <minimize-2 v-if="isFullscreen" /><maximize-2 v-else />
+          </base-button>
         </div>
       </div>
     </div>
@@ -191,3 +235,11 @@ const trainingMetrics = computed<TrainingMetrics>(() => {
     />
   </main>
 </template>
+
+<style scoped>
+.cinematic-stage:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  background: #080b0d;
+}
+</style>
