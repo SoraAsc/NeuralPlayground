@@ -433,6 +433,7 @@ onUnmounted(() => {
           "
           :insight-detail="`aproximação ${metrics.primaryThreatTime.toFixed(2)}s · folga ${metrics.primaryThreatClearance.toFixed(0)}u`"
           :meter="metrics.primaryRisk * 100"
+          meter-label="RISCO DE COLISÃO"
           meter-tone="red"
         >
           <template #reading>

@@ -343,6 +343,7 @@ onUnmounted(() => {
           :insight-value="metrics.action === 1 ? 'BATER ASAS' : 'PLANAR'"
           :insight-detail="`Δx ${metrics.horizontalDistance.toFixed(0)} · Δy ${metrics.verticalDistance.toFixed(0)} · vy ${metrics.birdVelocity.toFixed(1)}`"
           :meter="Math.min(100, Math.abs(metrics.verticalDistance) / 2.5)"
+          meter-label="DESVIO VERTICAL ATÉ O CANO"
           :meter-tone="Math.abs(metrics.verticalDistance) > 150 ? 'red' : 'amber'"
         />
         <div

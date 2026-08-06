@@ -297,6 +297,7 @@ onUnmounted(() => {
           "
           :insight-detail="`força ${metrics.force.toFixed(2)} · velocidade angular ${metrics.angularVelocity.toFixed(2)}`"
           :meter="Math.min(100, Math.abs(metrics.angle) * 190)"
+          meter-label="ERRO ANGULAR · DISTÂNCIA DO EQUILÍBRIO"
           :meter-tone="Math.abs(metrics.angle) > 0.3 ? 'red' : 'cyan'"
         />
 

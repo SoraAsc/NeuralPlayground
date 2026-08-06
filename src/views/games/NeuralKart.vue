@@ -427,6 +427,7 @@ onUnmounted(() => {
             <div class="mb-2 flex items-end justify-between">
               <div>
                 <p class="hud-kicker">TELEMETRIA</p>
+                <p class="mt-1 hud-kicker">VELOCIDADE DO KART</p>
                 <p class="mt-1 font-mono text-4xl font-light tabular-nums">
                   {{ inspection.speed.toFixed(0)
                   }}<span class="ml-1 text-sm text-white/45">U/S</span>
@@ -469,20 +470,20 @@ onUnmounted(() => {
               </p>
             </div>
             <div class="relative h-1 bg-white/15">
-              <span class="absolute left-1/2 top-[-3px] h-[7px] w-px bg-white/50" />
+              <span class="absolute left-1/2 -top-0.75 h-1.75 w-px bg-white/50" />
               <span
-                class="absolute top-[-2px] h-[5px] w-2 rounded-full bg-cyan-300 transition-[left] duration-100"
+                class="absolute -top-0.5 h-1.25 w-2 rounded-full bg-cyan-300 transition-[left] duration-100"
                 :style="{ left: `${50 + inspection.appliedSteer * 45}%` }"
               />
             </div>
             <div class="mt-5 flex items-center gap-3">
-              <span class="hud-kicker shrink-0">JANELA CP</span>
+              <span class="hud-kicker shrink-0">LIMITE DO CHECKPOINT</span>
               <div class="h-px grow bg-white/15">
                 <div class="h-px bg-rose-400" :style="{ width: `${checkpointProgress}%` }" />
               </div>
-              <span class="font-mono text-[10px] text-white/55"
-                >{{ inspection.time.toFixed(1) }}s</span
-              >
+              <span class="font-mono text-[10px] text-white/55">
+                {{ inspection.time.toFixed(1) }} / {{ inspection.maxTime.toFixed(1) }}s
+              </span>
             </div>
           </div>
         </div>

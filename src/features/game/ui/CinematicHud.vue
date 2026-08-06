@@ -19,6 +19,7 @@ defineProps<{
   insightValue: string
   insightDetail?: string
   meter?: number
+  meterLabel?: string
   meterTone?: 'cyan' | 'amber' | 'red'
 }>()
 </script>
@@ -77,6 +78,9 @@ defineProps<{
           :style="{ width: `${Math.max(0, Math.min(100, meter))}%` }"
         />
       </div>
+      <p v-if="meter !== undefined && meterLabel" class="mt-2 hud-kicker">
+        {{ meterLabel }}
+      </p>
     </div>
 
     <div class="flex items-center gap-8 border-x border-white/15 px-10 text-center">
@@ -91,12 +95,7 @@ defineProps<{
       </div>
     </div>
 
-    <div class="ml-auto max-w-xs text-right">
-      <p class="hud-kicker">LEITURA</p>
-      <slot name="reading">
-        <p class="mt-1 text-sm text-white/60">A política decide em tempo real a cada frame.</p>
-      </slot>
-    </div>
+    <div />
   </div>
 </template>
 

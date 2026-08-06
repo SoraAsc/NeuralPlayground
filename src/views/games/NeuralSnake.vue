@@ -178,6 +178,7 @@ const trainingMetrics = computed<TrainingMetrics>(() => {
           "
           :insight-detail="`${((currentSimulation?.acceleratedTimeTrained ?? 0) / 60).toFixed(1)} min de experiência acelerada`"
           :meter="Math.min(100, (currentSimulation?.bodySize ?? 0) * 5)"
+          meter-label="CRESCIMENTO DA COBRA"
           meter-tone="cyan"
         />
 

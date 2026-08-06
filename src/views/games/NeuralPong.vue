@@ -300,6 +300,7 @@ onUnmounted(() => {
           :insight-value="metrics.rallies > 8 ? 'TROCA SUSTENTADA' : 'RECALCULANDO INTERCEPTAÇÃO'"
           :insight-detail="`Q-left ${diagnostics.left.qValues.map((v) => v.toFixed(2)).join(' / ')}`"
           :meter="Math.min(100, metrics.rallies * 5)"
+          meter-label="INTENSIDADE DA TROCA"
           meter-tone="amber"
         >
           <template #reading>
