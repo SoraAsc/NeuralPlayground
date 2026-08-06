@@ -25,6 +25,7 @@ const props = defineProps<{
   primaryRisk: number
   primaryThreatTime: number
   primaryThreatClearance: number
+  cinematicDirector: boolean
 }>()
 
 const emit = defineEmits<{
@@ -33,6 +34,7 @@ const emit = defineEmits<{
   load: []
   reset: []
   'toggle-training': []
+  'update:cinematicDirector': [value: boolean]
 }>()
 
 const simulation = computed(() => ({
@@ -123,6 +125,16 @@ const infoSections: InfoSection[] = [
             :log-scale="true"
             @update:model-value="emit('update:speed', $event)"
           />
+          <div class="grid grid-cols-2 gap-2">
+            <base-button
+              class="col-span-2"
+              size="sm"
+              :variant="cinematicDirector ? 'primary' : 'outline'"
+              @click="emit('update:cinematicDirector', !cinematicDirector)"
+            >
+              Diretor cinematic
+            </base-button>
+          </div>
         </section>
         <section class="flex flex-col gap-3 px-4 py-4">
           <div class="flex items-center gap-1.5">

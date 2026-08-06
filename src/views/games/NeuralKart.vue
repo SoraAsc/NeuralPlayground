@@ -40,6 +40,7 @@ import BaseButton from '@/features/experiments/ui/BaseButton.vue'
 import { Brain, Camera, Focus, Maximize2, Minimize2, ScanLine } from '@lucide/vue'
 import type { TrackGenerator } from '@/features/pixijs/neural-kart/track'
 import type { TrainingMetrics } from '@/features/game/model/training-metrics'
+import { useCinematicDirector } from '@/features/game/model/use-cinematic-director'
 
 const gameContainer = ref<HTMLDivElement | null>(null)
 const cinematicStage = ref<HTMLDivElement | null>(null)
@@ -47,6 +48,7 @@ const isFullscreen = ref(false)
 const cameraMode = ref<'full' | 'follow'>('follow')
 const karts = ref<Entity[]>([])
 const selectedKartIndex = ref(0)
+const includePlayer = ref(false)
 const timeMultiplier = ref(1)
 const trackType = ref<'circuit' | 'oval' | 'snake' | 'crazy'>('circuit')
 const checkpointLimit = ref(20)
@@ -86,6 +88,25 @@ const trainingMetrics = computed<TrainingMetrics>(() => ({
 }))
 
 const activeKart = computed(() => karts.value[selectedKartIndex.value])
+const cinematicKartIndexes = computed(() =>
+  karts.value.map((_, index) => index).filter((index) => includePlayer.value || index !== 1),
+)
+const cinematicDirector = useCinematicDirector(isFullscreen, {
+  count: computed(() => cinematicKartIndexes.value.length + 1),
+  intervalMs: 14000,
+  onFocus: (index) => {
+    if (index === 0) {
+      cameraMode.value = 'full'
+      const types = ['circuit', 'oval', 'snake', 'crazy'] as const
+      const nextType = types[(types.indexOf(trackType.value) + 1) % types.length] ?? types[0]
+      changeTrack(nextType)
+    }
+    else {
+      cameraMode.value = 'follow'
+      selectedKartIndex.value = cinematicKartIndexes.value[index - 1] ?? 0
+    }
+  },
+})
 
 let collisionSystem: () => void
 let cpSystem: (delta: number) => void
@@ -160,7 +181,15 @@ function syncDiagnosticSensors() {
   karts.value.forEach((kart, index) => {
     const sensors = kart.get(AISensors)
     if (sensors) sensors.showVisuals = debugMode.value && index === selectedKartIndex.value
+    const sprite = kart.get(Sprite)?.view
+    if (sprite) sprite.visible = includePlayer.value || index !== 1
   })
+}
+
+function setIncludePlayer(value: boolean) {
+  includePlayer.value = value
+  if (!value && selectedKartIndex.value === 1) selectedKartIndex.value = 0
+  syncDiagnosticSensors()
 }
 
 function toggleDiagnostics() {
@@ -342,6 +371,7 @@ onMounted(async () => {
     const botKart = await spawnKart(0, 0, 0, 'sport', 'ai')
     const botKart2 = await spawnKart(0, 0, 0, 'compact', 'ai')
     karts.value = [botKart, playerKart, botKart2]
+    syncDiagnosticSensors()
     configureTrack()
     checkpointStatus.value = (await NeuralKartEnvironment.wasPublishedCheckpointLoaded())
       ? 'Modelo publicado carregado automaticamente'
@@ -520,6 +550,15 @@ onUnmounted(() => {
             <scan-line />
           </base-button>
           <base-button
+            :variant="cinematicDirector.enabled ? 'primary' : 'outline'"
+            size="icon"
+            class="rounded-lg"
+            title="Alternar diretor cinematic"
+            @click="cinematicDirector.toggle"
+          >
+            <scan-line />
+          </base-button>
+          <base-button
             :variant="debugMode ? 'primary' : 'outline'"
             size="icon"
             class="rounded-lg"
@@ -566,6 +605,8 @@ onUnmounted(() => {
       :track-type="trackType"
       :checkpoint-status="checkpointStatus"
       :debug-mode="debugMode"
+      :cinematic-director="cinematicDirector.enabled.value"
+      :include-player="includePlayer"
       :policy-inputs="inspection.policyInputs"
       :policy-outputs="inspection.policyOutputs"
       :applied-forward="inspection.appliedForward"
@@ -575,6 +616,8 @@ onUnmounted(() => {
       @update:speed="timeMultiplier = Math.max(1, Math.round($event))"
       @update:checkpoint-limit="setCheckpointLimit"
       @update:track-type="changeTrack"
+      @update:cinematic-director="(value) => { cinematicDirector.enabled.value = value; cinematicDirector.start() }"
+      @update:include-player="setIncludePlayer"
       @save="saveCheckpoint"
       @load="chooseCheckpoint"
       @clear="clearCheckpoint"

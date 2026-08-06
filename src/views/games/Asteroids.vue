@@ -5,6 +5,7 @@ import { Maximize2, Minimize2, Pause, Play, RotateCcw, ScanLine } from '@lucide/
 import BaseButton from '@/features/experiments/ui/BaseButton.vue'
 import CinematicHud from '@/features/game/ui/CinematicHud.vue'
 import { useCinematicMode } from '@/features/game/model/use-cinematic-mode'
+import { useCinematicDirector } from '@/features/game/model/use-cinematic-director'
 import AsteroidsPanel from '@/features/pixijs/asteroids/ui/AsteroidsPanel.vue'
 import {
   ASTEROIDS_WORLD,
@@ -53,6 +54,19 @@ const {
   isFullscreen,
   toggleFullscreen,
 } = useCinematicMode(() => pixiApp.resize())
+const cinematicDirector = useCinematicDirector(isFullscreen, {
+  // Mantém a câmera nos melhores agentes e retorna à visão geral com menor frequência.
+  count: ref(4),
+  intervalMs: 14000,
+  onFocus: (index) => {
+    if (index === 0) {
+      viewMode.value = 'all'
+      return
+    }
+    const ranked = [...env.snapshots()].sort((a, b) => b.score - a.score || b.survival - a.survival)
+    viewMode.value = ranked[index - 1]?.index ?? env.leader().index
+  },
+})
 
 const palette = computed(() =>
   theme.value === 'dark'
@@ -518,11 +532,13 @@ onUnmounted(() => {
       :primary-risk="metrics.primaryRisk"
       :primary-threat-time="metrics.primaryThreatTime"
       :primary-threat-clearance="metrics.primaryThreatClearance"
+      :cinematic-director="cinematicDirector.enabled.value"
       @update:speed="speed = Math.max(1, Math.round($event))"
       @save="saveCheckpoint"
       @load="chooseCheckpoint"
       @reset="resetLearning"
       @toggle-training="toggleTraining"
+      @update:cinematic-director="(value) => { cinematicDirector.enabled.value = value; cinematicDirector.start() }"
     />
     <input
       ref="checkpointInput"

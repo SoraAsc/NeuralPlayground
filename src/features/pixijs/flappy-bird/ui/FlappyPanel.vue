@@ -24,6 +24,7 @@ const props = defineProps<{
   horizontalDistance: number
   verticalDistance: number
   debugPipeVelocity: number
+  cinematicDirector: boolean
 }>()
 
 const emit = defineEmits<{
@@ -34,6 +35,7 @@ const emit = defineEmits<{
   'toggle-training': []
   'update:movingPipes': [value: boolean]
   'update:pipeVerticalSpeed': [value: number]
+  'update:cinematicDirector': [value: boolean]
 }>()
 
 const simulation = computed(() => ({
@@ -121,6 +123,16 @@ const infoSections: InfoSection[] = [
             :log-scale="true"
             @update:model-value="emit('update:speed', $event)"
           />
+          <div class="grid grid-cols-2 gap-2">
+            <base-button
+              class="col-span-2"
+              size="sm"
+              :variant="cinematicDirector ? 'primary' : 'outline'"
+              @click="emit('update:cinematicDirector', !cinematicDirector)"
+            >
+              Diretor cinematic
+            </base-button>
+          </div>
           <div class="flex flex-col gap-2">
             <div class="flex items-baseline justify-between gap-2">
               <span class="text-xs text-foreground">Movimento dos canos</span>

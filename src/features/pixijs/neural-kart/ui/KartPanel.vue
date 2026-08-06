@@ -21,6 +21,8 @@ const props = defineProps<{
   checkpointLimit: number
   trackType: 'circuit' | 'oval' | 'snake' | 'crazy'
   debugMode: boolean
+  cinematicDirector: boolean
+  includePlayer: boolean
   policyInputs: number[]
   policyOutputs: number[]
   appliedForward: number
@@ -37,6 +39,8 @@ const emit = defineEmits<{
   'toggle-training': []
   'update:checkpointLimit': [value: number]
   'update:trackType': [value: 'circuit' | 'oval' | 'snake' | 'crazy']
+  'update:cinematicDirector': [value: boolean]
+  'update:includePlayer': [value: boolean]
 }>()
 
 const simulation = computed(() => ({
@@ -196,6 +200,25 @@ const sensorList = (values: number[]) => values.map((value) => value.toFixed(0))
               <rotate-ccw /> Reiniciar aprendizado
             </base-button>
           </div>
+          <div class="grid grid-cols-2 gap-2">
+            <base-button
+              size="sm"
+              :variant="cinematicDirector ? 'primary' : 'outline'"
+              @click="emit('update:cinematicDirector', !cinematicDirector)"
+            >
+              Diretor cinematic
+            </base-button>
+            <base-button
+              size="sm"
+              :variant="includePlayer ? 'primary' : 'outline'"
+              @click="emit('update:includePlayer', !includePlayer)"
+            >
+              Incluir jogador
+            </base-button>
+          </div>
+          <p class="text-[10px] leading-relaxed text-muted-foreground/60">
+            O diretor alterna entre a pista completa e os karts disponíveis durante o cinematic.
+          </p>
           <p class="text-[10px] leading-relaxed text-muted-foreground/60">
             {{ checkpointStatus }}
           </p>

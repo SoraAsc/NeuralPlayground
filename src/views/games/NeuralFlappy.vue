@@ -5,6 +5,7 @@ import { Maximize2, Minimize2, Pause, Play, RotateCcw, ScanLine } from '@lucide/
 import BaseButton from '@/features/experiments/ui/BaseButton.vue'
 import CinematicHud from '@/features/game/ui/CinematicHud.vue'
 import { useCinematicMode } from '@/features/game/model/use-cinematic-mode'
+import { useCinematicDirector } from '@/features/game/model/use-cinematic-director'
 import FlappyPanel from '@/features/pixijs/flappy-bird/ui/FlappyPanel.vue'
 import { FLAPPY_WORLD, FlappyPPOEnvironment } from '@/features/pixijs/flappy-bird/ai/flappy-env'
 import { useTheme } from '@/shared/lib/theme/useTheme'
@@ -46,6 +47,18 @@ const {
   isFullscreen,
   toggleFullscreen,
 } = useCinematicMode(() => pixiApp.resize())
+const cinematicDirector = useCinematicDirector(isFullscreen, {
+  count: ref(4),
+  intervalMs: 14000,
+  onFocus: (index) => {
+    if (index === 0) {
+      viewMode.value = 'all'
+      return
+    }
+    const ranked = [...env.snapshots()].sort((a, b) => b.score - a.score || b.survival - a.survival)
+    viewMode.value = ranked[index - 1]?.index ?? env.leader().index
+  },
+})
 
 const palette = computed(() =>
   theme.value === 'dark'
@@ -418,6 +431,7 @@ onUnmounted(() => {
       :horizontal-distance="metrics.horizontalDistance"
       :vertical-distance="metrics.verticalDistance"
       :debug-pipe-velocity="metrics.pipeVelocity"
+      :cinematic-director="cinematicDirector.enabled.value"
       @update:speed="speed = Math.max(1, Math.round($event))"
       @save="saveCheckpoint"
       @load="chooseCheckpoint"
@@ -425,6 +439,12 @@ onUnmounted(() => {
       @toggle-training="toggleTraining"
       @update:moving-pipes="updatePipeMotion($event)"
       @update:pipe-vertical-speed="updatePipeMotion(movingPipes, $event)"
+      @update:cinematic-director="
+        (value) => {
+          cinematicDirector.enabled.value = value
+          cinematicDirector.start()
+        }
+      "
     />
     <input
       ref="checkpointInput"
