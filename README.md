@@ -22,7 +22,6 @@ The playground uses [NNW](https://github.com/SoraAsc/NNW) for neural-network and
 | Asteroids          | PPO             | Multi-discrete | PixiJS      |
 | Neural Network Lab | Backpropagation | Supervised     | Browser SVG |
 | Color Predictor    | Backpropagation | 11 RGB classes | Browser UI  |
-| Shape Classifier   | Backpropagation | 16×16 drawing  | Canvas      |
 
 ## Tech stack
 
